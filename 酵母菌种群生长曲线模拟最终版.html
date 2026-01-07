@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>酵母菌种群生长曲线模拟</title>
+    <style>
+        /* 基础重置 */
+        * {margin: 0; padding: 0; box-sizing: border-box;}
+        body {
+            padding: 20px; 
+            font-family: "Microsoft Yahei", Arial, sans-serif;
+            background-color: #f9f9f9;
+            /* 确保页脚固定在底部 */
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        /* 容器样式 */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            flex: 1; /* 占满可用空间，推页脚到底部 */
+        }
+        h1 {
+            text-align: center; 
+            margin-bottom: 30px; 
+            color: #333;
+            font-size: 24px;
+        }
+        /* 卡片通用样式 */
+        .card {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+        .card-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #2196F3;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card-title i {
+            font-size: 20px;
+        }
+        /* 实验说明板块 */
+        .desc-text {
+            line-height: 1.8;
+            color: #666;
+            margin-bottom: 15px;
+        }
+        .desc-card-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .desc-card {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #666;
+        }
+        .desc-card-blue {
+            background-color: #eff6ff;
+        }
+        .desc-card-purple {
+            background-color: #f5f3ff;
+        }
+        /* 核心布局：参数+曲线 */
+        .main-wrap {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .param-panel {
+            flex: 1;
+            min-width: 300px;
+        }
+        .chart-panel {
+            flex: 2;
+            min-width: 600px;
+        }
+        /* 滑块样式（新增标注样式） */
+        .slider-item {margin: 20px 0;}
+        .slider-item label {
+            display: block; 
+            margin-bottom: 8px; 
+            font-weight: bold;
+            color: #555;
+        }
+        .slider-wrap {display: flex; align-items: center; gap: 10px;}
+        input[type="range"] {
+            flex: 1; 
+            height: 8px;
+            -webkit-appearance: none;
+            background: #e5e7eb;
+            border-radius: 4px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #2196F3;
+            cursor: pointer;
+        }
+        .slider-value {
+            min-width: 60px; 
+            text-align: center; 
+            color: #2196F3; 
+            font-weight: bold;
+        }
+        /* 关键：恢复滑块下方的说明标注 */
+        .slider-desc {
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+            padding-left: 5px;
+        }
+        /* 按钮样式 */
+        button {
+            padding: 12px 24px; 
+            margin: 5px; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+        #observeBtn {
+            background: #2196F3; 
+            color: white;
+        }
+        #observeBtn:hover {
+            background: #1976D2;
+        }
+        #resetBtn {
+            background: #f5f5f5; 
+            color: #333;
+        }
+        #resetBtn:hover {
+            background: #e0e0e0;
+        }
+        /* 图表容器 */
+        #chartContainer {
+            width: 100%; 
+            height: 400px; 
+            margin: 20px 0; 
+            border: 1px solid #eee;
+        }
+        /* 表格样式 */
+        table {
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 10px; 
+            border: 1px solid #ddd; 
+            text-align: left;
+        }
+        th {
+            background: #f5f5f5;
+            color: #555;
+        }
+        /* 生物学解释板块 */
+        .bio-desc {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 10px;
+        }
+        .bio-item {
+            flex: 1;
+            min-width: 250px;
+        }
+        .bio-item h3 {
+            font-size: 16px;
+            color: #2196F3;
+            margin-bottom: 10px;
+        }
+        .bio-item ul {
+            list-style: disc;
+            list-style-position: inside;
+            line-height: 1.6;
+            color: #666;
+            font-size: 14px;
+        }
+        /* 图标库兼容 */
+        .fa {
+            font-family: "FontAwesome";
+        }
+        /* 极简页脚式署名（无背景/无圆角/低调） */
+        .footer-signature {
+            max-width: 1200px;
+            margin: 40px auto 20px; /* 增加上方间距，远离内容 */
+            padding: 10px 0; /* 仅上下内边距，无左右 */
+            font-size: 14px; /* 字号缩小，更低调 */
+            color: #888; /* 浅灰色文字，不抢焦点 */
+            text-align: center; /* 居中显示 */
+            border-top: 1px solid #eee; /* 顶部细分隔线，弱化存在感 */
+        }
+    </style>
+    <!-- 引入Chart.js和图标库 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1>酵母菌种群生长曲线模拟</h1>
+
+        <!-- 实验说明板块 -->
+        <div class="card">
+            <div class="card-title">
+                <i class="fa fa-info-circle"></i>实验说明
+            </div>
+            <p class="desc-text">
+                酵母菌种群增长模式由环境条件决定：<br>
+                <strong>理想条件</strong>（温度28℃+食物量10+空间500mL）：资源无限，种群呈指数增长（J型曲线）；<br>
+                <strong>自然条件</strong>（非最适参数）：受环境容纳量限制，呈现S型曲线（调整期→对数期→稳定期→衰亡期）。
+            </p>
+            <div class="desc-card-group">
+                <div class="desc-card desc-card-blue">
+                    <strong>S型曲线（逻辑斯蒂增长）：</strong>受环境容纳量(K值)限制，符合自然条件下种群增长规律
+                </div>
+                <div class="desc-card desc-card-purple">
+                    <strong>J型曲线（指数增长）：</strong>仅在最适/无限环境条件下出现，增长率保持恒定
+                </div>
+            </div>
+        </div>
+
+        <!-- 核心布局：参数设置 + 生长曲线 -->
+        <div class="main-wrap">
+            <!-- 参数区（恢复滑块标注） -->
+            <div class="param-panel card">
+                <div class="card-title">
+                    <i class="fa fa-sliders"></i>环境参数设置
+                </div>
+                
+                <!-- 温度（恢复最适温度标注） -->
+                <div class="slider-item">
+                    <label>温度 (℃)</label>
+                    <div class="slider-wrap">
+                        <input type="range" id="tempSlider" min="10" max="40" value="28">
+                        <span id="tempValue" class="slider-value">28℃</span>
+                    </div>
+                    <!-- 关键：恢复温度说明标注 -->
+                    <div class="slider-desc">最适温度：28℃（过高/过低会抑制生长）</div>
+                </div>
+                
+                <!-- 食物（恢复食物上限标注） -->
+                <div class="slider-item">
+                    <label>食物量 (相对值)</label>
+                    <div class="slider-wrap">
+                        <input type="range" id="foodSlider" min="1" max="10" value="8">
+                        <span id="foodValue" class="slider-value">8</span>
+                    </div>
+                    <!-- 关键：恢复食物说明标注 -->
+                    <div class="slider-desc">最高值：10（食物越多，增长上限越高）</div>
+                </div>
+                
+                <!-- 空间（恢复空间上限标注） -->
+                <div class="slider-item">
+                    <label>空间大小 (mL)</label>
+                    <div class="slider-wrap">
+                        <input type="range" id="spaceSlider" min="50" max="500" step="50" value="200">
+                        <span id="spaceValue" class="slider-value">200mL</span>
+                    </div>
+                    <!-- 关键：恢复空间说明标注 -->
+                    <div class="slider-desc">最大值：500mL（空间越大，增长上限越高）</div>
+                </div>
+                
+                <!-- 按钮 -->
+                <button id="observeBtn" onclick="generateCurve()">
+                    <i class="fa fa-line-chart"></i> 观察统计
+                </button>
+                <button id="resetBtn" onclick="resetAll()">
+                    <i class="fa fa-refresh"></i> 重置
+                </button>
+            </div>
+
+            <!-- 图表+表格区 -->
+            <div class="chart-panel card">
+                <div class="card-title">
+                    <i class="fa fa-area-chart"></i>生长曲线
+                </div>
+                <div id="chartContainer">
+                    <canvas id="growthChart"></canvas>
+                </div>
+                
+                <div class="card-title" style="margin-top: 20px;">
+                    <i class="fa fa-table"></i>数据表格
+                </div>
+                <table id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>天数</th>
+                            <th>种群数量 (×10⁶个)</th>
+                            <th>生长特征</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr>
+                            <td colspan="3" style="text-align: center; color: #999;">点击「观察统计」生成数据</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 生物学原理解释板块 -->
+        <div class="card">
+            <div class="card-title">
+                <i class="fa fa-book"></i>生物学原理解释
+            </div>
+            <div class="bio-desc">
+                <div class="bio-item">
+                    <h3>影响酵母菌生长的因素</h3>
+                    <ul>
+                        <li><strong>温度：</strong>酵母菌是兼性厌氧菌，最适生长温度25-30℃</li>
+                        <li><strong>营养物质：</strong>葡萄糖等碳源是主要能量来源</li>
+                        <li><strong>空间限制：</strong>培养体积影响种群密度上限</li>
+                        <li><strong>代谢产物：</strong>酒精等代谢产物积累会抑制生长</li>
+                    </ul>
+                </div>
+                <div class="bio-item">
+                    <h3>两种增长模型触发条件</h3>
+                    <ul>
+                        <li><strong>J型曲线触发：</strong>温度=28℃ + 食物量=10 + 空间=500mL</li>
+                        <li><strong>S型曲线触发：</strong>任意参数未达到最适值</li>
+                        <li><strong>环境容纳量：</strong>S型曲线的峰值由食物、空间共同决定</li>
+                        <li><strong>K/2值应用：</strong>指导发酵工业的最优收获时机</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 极简页脚式署名 -->
+    <div class="footer-signature">
+        酵母菌种群生长曲线模拟 | 交大附中生物组陈彤
+    </div>
+
+    <script>
+        // 全局变量
+        let myChart = null;
+        // 初始化图表（页面加载就创建）
+        window.onload = function() {
+            initChart();
+            bindSliderInput();
+        };
+
+        // 1. 初始化图表
+        function initChart() {
+            const ctx = document.getElementById('growthChart').getContext('2d');
+            if (!window.Chart) {
+                alert('Chart.js加载失败，请刷新页面！');
+                return;
+            }
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 30}, (_, i) => `第${i+1}天`),
+                    datasets: [{
+                        label: '酵母菌种群数量',
+                        data: [],
+                        borderColor: '#2196F3',
+                        backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3 // 曲线更平滑
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        yAxes: [{ 
+                            beginAtZero: true,
+                            scaleLabel: {
+                                display: true,
+                                labelString: '种群数量 (×10⁶个)'
+                            }
+                        }],
+                        xAxes: [{ 
+                            gridLines: { display: false },
+                            scaleLabel: {
+                                display: true,
+                                labelString: '培养天数'
+                            }
+                        }]
+                    },
+                    animation: false,
+                    tooltips: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                }
+            });
+        }
+
+        // 2. 滑块实时显示
+        function bindSliderInput() {
+            document.getElementById('tempSlider').oninput = function() {
+                document.getElementById('tempValue').innerText = this.value + '℃';
+            };
+            document.getElementById('foodSlider').oninput = function() {
+                document.getElementById('foodValue').innerText = this.value;
+            };
+            document.getElementById('spaceSlider').oninput = function() {
+                document.getElementById('spaceValue').innerText = this.value + 'mL';
+            };
+        }
+
+        // 3. 观察统计核心函数（严格匹配标注逻辑+贴合现实曲线）
+        function generateCurve() {
+            // 获取参数
+            const temp = Number(document.getElementById('tempSlider').value);
+            const food = Number(document.getElementById('foodSlider').value);
+            const space = Number(document.getElementById('spaceSlider').value);
+            
+            // ========== 核心逻辑：严格匹配标注说明 ==========
+            // 1. 温度影响：28℃最优，偏离越远抑制越强（符合“过高/过低会抑制生长”）
+            const tempEffect = Math.exp(-Math.pow(temp - 28, 2) / 100); // 高斯分布，28℃时effect=1
+            // 2. 食物影响：上限10，食物越多K值越高（符合“食物越多，增长上限越高”）
+            const foodEffect = food / 10; // 10时effect=1，1时effect=0.1
+            // 3. 空间影响：上限500mL，空间越大K值越高（符合“空间越大，增长上限越高”）
+            const spaceEffect = space / 500; // 500时effect=1，50时effect=0.1
+            
+            // 计算环境容纳量K值（综合三者影响）
+            const baseK = 20; // 基础上限
+            const K = baseK * tempEffect * foodEffect * spaceEffect;
+            
+            // 判断J型曲线（仅最适参数组合触发）
+            const isJ = (temp === 28 && food === 10 && space === 500);
+            const data = [];
+            const initialNum = 0.2; // 初始种群数量（×10⁶）
+            
+            // 生成30天数据（贴合真实实验的生长规律）
+            for (let day = 1; day <= 30; day++) {
+                let num;
+                if (isJ) {
+                    // J型曲线：指数增长（理想条件无抑制）
+                    num = initialNum * Math.exp(0.2 * day);
+                } else {
+                    // S型曲线：逻辑斯蒂增长（符合四阶段规律）
+                    const r = 0.4 * tempEffect; // 增长率受温度影响
+                    // 逻辑斯蒂公式：Nt = K / (1 + (K/N0 - 1) * e^(-r*t))
+                    num = K / (1 + ((K - initialNum)/initialNum) * Math.exp(-r * day));
+                    
+                    // 衰亡期：20天后因营养耗尽/代谢产物积累开始下降
+                    if (day > 20) {
+                        num = num * (1 - (day - 20) * 0.015); // 每天下降1.5%，缓慢衰减
+                    }
+                }
+                
+                // 确保数值非负且保留1位小数
+                num = Math.max(0, Math.round(num * 10) / 10);
+                data.push(num);
+            }
+            
+            // 更新图表
+            myChart.data.datasets[0].data = data;
+            myChart.data.datasets[0].label = isJ 
+                ? 'J型曲线（理想条件）' 
+                : 'S型曲线（自然条件）';
+            myChart.data.datasets[0].borderColor = isJ ? '#9C27B0' : '#2196F3';
+            myChart.data.datasets[0].backgroundColor = isJ 
+                ? 'rgba(156, 39, 176, 0.1)' 
+                : 'rgba(33, 150, 243, 0.1)';
+            myChart.update();
+            
+            // 更新表格
+            updateTable(data, isJ);
+        }
+
+        // 4. 重置函数
+        function resetAll() {
+            // 重置滑块
+            document.getElementById('tempSlider').value = 28;
+            document.getElementById('tempValue').innerText = '28℃';
+            
+            document.getElementById('foodSlider').value = 8;
+            document.getElementById('foodValue').innerText = '8';
+            
+            document.getElementById('spaceSlider').value = 200;
+            document.getElementById('spaceValue').innerText = '200mL';
+            
+            // 清空图表
+            myChart.data.datasets[0].data = [];
+            myChart.data.datasets[0].label = '酵母菌种群数量';
+            myChart.data.datasets[0].borderColor = '#2196F3';
+            myChart.data.datasets[0].backgroundColor = 'rgba(33, 150, 243, 0.1)';
+            myChart.update();
+            
+            // 重置表格
+            document.getElementById('tableBody').innerHTML = `
+                <tr>
+                    <td colspan="3" style="text-align: center; color: #999;">点击「观察统计」生成数据</td>
+                </tr>
+            `;
+        }
+
+        // 5. 更新表格
+        function updateTable(data, isJ) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            for (let i = 0; i < data.length; i++) {
+                const day = i + 1;
+                const val = data[i];
+                let feature = '';
+                if (isJ) {
+                    feature = '指数增长（理想条件）';
+                } else {
+                    if (day <= 4) feature = '调整期（适应环境）';
+                    else if (day <= 12) feature = '对数期（快速繁殖）';
+                    else if (day <= 20) feature = '稳定期（数量峰值）';
+                    else feature = '衰亡期（数量下降）';
+                }
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>第${day}天</td><td>${val}</td><td>${feature}</td>`;
+                tbody.appendChild(tr);
+            }
+        }
+    </script>
+</body>
+</html>
