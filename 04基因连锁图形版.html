@@ -1,0 +1,765 @@
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>基因自由组合与连锁现象模拟</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        accent: '#8B5CF6',
+                        neutral: '#64748B',
+                        light: '#F1F5F9',
+                        dark: '#1E293B'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .border-gradient {
+                border-image: linear-gradient(to right, theme('colors.primary'), theme('colors.accent')) 1;
+            }
+            .box-shadow-custom {
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            }
+            .transition-custom {
+                transition: all 0.3s ease;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-dark">
+    <!-- 页面标题 -->
+    <header class="bg-gradient-to-r from-primary to-accent text-white py-6 px-4 shadow-lg">
+        <div class="container mx-auto text-center">
+            <h1 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold mb-2">基因自由组合与连锁现象模拟</h1>
+            <p class="text-white/80 max-w-3xl mx-auto">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 交大附中生物组 陈彤&amp;王自闇</p>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-4 md:p-6 lg:p-8 max-w-7xl">
+        <!-- 大方框1：基因连锁设置 -->
+        <section class="bg-white rounded-xl shadow-lg p-5 mb-8 transition-custom hover:shadow-xl">
+            <h2 class="text-xl font-bold mb-4 text-primary flex items-center">
+                <i class="fa fa-cogs mr-2"></i>基因连锁设置
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- 左边小方框：亲本1 -->
+                <div class="border-2 border-primary/30 rounded-lg p-4 bg-light/50">
+                    <h3 class="text-lg font-semibold mb-3 text-center">亲本1：基因型 YyRr</h3>
+                    
+                    <!-- 连锁设置 -->
+                    <div class="mb-4">
+                        <label class="block text-neutral font-medium mb-2">基因连锁情况：</label>
+                        <div class="flex flex-wrap gap-3">
+                            <label class="inline-flex items-center p-2 border border-gray-200 rounded-md cursor-pointer hover:bg-primary/10 transition-custom">
+                                <input type="radio" name="linkage" value="none" checked="" class="mr-2 accent-primary">
+                                <span>不连锁</span>
+                            </label>
+                            <label class="inline-flex items-center p-2 border border-gray-200 rounded-md cursor-pointer hover:bg-primary/10 transition-custom">
+                                <input type="radio" name="linkage" value="yr" class="mr-2 accent-primary">
+                                <span>YR/yr 连锁</span>
+                            </label>
+                            <label class="inline-flex items-center p-2 border border-gray-200 rounded-md cursor-pointer hover:bg-primary/10 transition-custom">
+                                <input type="radio" name="linkage" value="yR" class="mr-2 accent-primary">
+                                <span>Yr/yR 连锁</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- 距离调节（初始隐藏） -->
+                    <div id="distanceControl" class="mb-4 hidden">
+                        <label class="block text-neutral font-medium mb-2">基因距离与重组率：</label>
+                        <div class="flex items-center gap-4">
+                            <input type="range" id="distanceSlider" min="0" max="20" value="5" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary">
+                            <span id="recombinationRate" class="text-primary font-semibold min-w-[50px]">5%</span>
+                        </div>
+                        <p class="text-sm text-neutral mt-1">此处我们设置的重组率为0-20%。请同学们思考基因之间的距离与重组率之间的关系</p>
+                    </div>
+                    
+                    <!-- 染色体图示 -->
+                    <div class="flex justify-center my-6">
+                        <div class="relative w-48 h-48 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center">
+                            <!-- 染色体将通过JS绘制 -->
+                            <canvas id="parent1Chromosomes" width="180" height="180"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- 配子类型和比例 -->
+                    <div class="bg-white rounded-lg p-3 border border-gray-200">
+                        <h4 class="text-sm font-medium text-neutral mb-2">产生的配子类型及比例：</h4>
+                        <div id="parent1Gametes" class="grid grid-cols-2 gap-1 text-sm">
+                            <div>YR: 25%</div>
+                            <div>Yr: 25%</div>
+                            <div>yR: 25%</div>
+                            <div>yr: 25%</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 右边小方框：亲本2 -->
+                <div class="border-2 border-secondary/30 rounded-lg p-4 bg-light/50">
+                    <h3 class="text-lg font-semibold mb-3 text-center">亲本2：基因型 yyrr</h3>
+                    
+                    <!-- 染色体图示 -->
+                    <div class="flex justify-center my-12">
+                        <div class="relative w-48 h-48 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center">
+                            <!-- 染色体将通过JS绘制 -->
+                            <canvas id="parent2Chromosomes" width="180" height="180"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- 配子类型和比例 -->
+                    <div class="bg-white rounded-lg p-3 border border-gray-200">
+                        <h4 class="text-sm font-medium text-neutral mb-2">产生的配子类型及比例：</h4>
+                        <div id="parent2Gametes" class="text-sm">
+                            <div>yr: 100%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 操作按钮 -->
+            <div class="mt-6 flex flex-wrap gap-4 justify-center">
+                <button id="randomFertilization" class="bg-secondary hover:bg-secondary/90 text-white px-6 py-3 rounded-lg shadow transition-custom flex items-center">
+                    <i class="fa fa-random mr-2"></i>精卵随机结合
+                </button>
+                <button id="resetExperiment" class="bg-neutral hover:bg-neutral/90 text-white px-6 py-3 rounded-lg shadow transition-custom flex items-center">
+                    <i class="fa fa-refresh mr-2"></i>重置实验
+                </button>
+                <div class="flex items-center gap-2">
+                    <input type="number" id="autoSimCount" value="1000" min="1" max="100000" class="w-24 px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent">
+                    <button id="autoSimulate" class="bg-accent hover:bg-accent/90 text-white px-6 py-3 rounded-lg shadow transition-custom flex items-center">
+                        <i class="fa fa-play mr-2"></i>自动模拟
+                    </button>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 方框2：实验结果 -->
+        <section class="bg-white rounded-xl shadow-lg p-5 transition-custom hover:shadow-xl">
+            <h2 class="text-xl font-bold mb-4 text-primary flex items-center">
+                <i class="fa fa-bar-chart mr-2"></i>实验结果
+            </h2>
+            
+            <!-- 最近一次结果（优化为一行显示） -->
+            <div class="mb-6 p-4 bg-light/50 rounded-lg border border-gray-200">
+                <h3 class="text-lg font-semibold mb-3">最近一次结合结果</h3>
+                <div class="flex flex-wrap items-center justify-center gap-4">
+                    <div class="bg-white p-2 rounded border border-primary/30">
+                        <p class="text-xs text-neutral">配子1</p>
+                        <p id="lastGamete1" class="text-lg font-semibold text-primary">--</p>
+                    </div>
+                    <span class="text-xl text-gray-500">+</span>
+                    <div class="bg-white p-2 rounded border border-secondary/30">
+                        <p class="text-xs text-neutral">配子2</p>
+                        <p id="lastGamete2" class="text-lg font-semibold text-secondary">--</p>
+                    </div>
+                    <span class="text-xl text-gray-500">=</span>
+                    <div class="bg-white p-2 rounded border border-accent/30">
+                        <p class="text-xs text-neutral">受精卵</p>
+                        <p id="lastZygote" class="text-lg font-bold text-accent">--</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 实验结果汇总表格 -->
+            <div class="mb-6 overflow-x-auto">
+                <h3 class="text-lg font-semibold mb-3">实验结果汇总</h3>
+                <table class="min-w-full bg-white border border-gray-200 rounded-lg">
+                    <thead>
+                        <tr class="bg-gray-100 text-left">
+                            <th class="py-3 px-4 border-b">基因型组合</th>
+                            <th class="py-3 px-4 border-b">出现次数</th>
+                            <th class="py-3 px-4 border-b">所占百分比</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsTable">
+                        <tr class="hover:bg-gray-50 transition-custom">
+                            <td class="py-3 px-4 border-b">YyRr</td>
+                            <td class="py-3 px-4 border-b" id="countYyRr">0</td>
+                            <td class="py-3 px-4 border-b" id="percentYyRr">0%</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50 transition-custom">
+                            <td class="py-3 px-4 border-b">Yyrr</td>
+                            <td class="py-3 px-4 border-b" id="countYyrr">0</td>
+                            <td class="py-3 px-4 border-b" id="percentYyrr">0%</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50 transition-custom">
+                            <td class="py-3 px-4 border-b">yyRr</td>
+                            <td class="py-3 px-4 border-b" id="countyyRr">0</td>
+                            <td class="py-3 px-4 border-b" id="percentyyRr">0%</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50 transition-custom">
+                            <td class="py-3 px-4">yyrr</td>
+                            <td class="py-3 px-4" id="countyyrr">0</td>
+                            <td class="py-3 px-4" id="percentyyrr">0%</td>
+                        </tr>
+                        <tr class="bg-gray-50 font-semibold">
+                            <td class="py-3 px-4 border-t">总计</td>
+                            <td class="py-3 px-4 border-t" id="totalCount">0</td>
+                            <td class="py-3 px-4 border-t">100%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 柱状图 -->
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold mb-3">基因型分布柱状图</h3>
+                <div class="h-64">
+                    <canvas id="resultsChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- 性状分离比 -->
+            <div class="bg-light/50 p-4 rounded-lg border border-gray-200">
+                <h3 class="text-lg font-semibold mb-3">性状分离比</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm text-neutral mb-1">实际分离比：</p>
+                        <p id="actualRatio" class="text-xl font-semibold">YyRr : Yyrr : yyRr : yyrr = 0 : 0 : 0 : 0</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-neutral mb-1">理论分离比：</p>
+                        <p id="theoreticalRatio" class="text-xl font-semibold text-accent/80">YyRr : Yyrr : yyRr : yyrr = 1 : 1 : 1 : 1</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-dark text-white/80 py-6 mt-10">
+        <div class="container mx-auto px-4 text-center">
+            <p>基因自由组合与连锁现象模拟教学工具 © 20250918</p>
+            <p class="text-sm mt-2">
+</p>
+        </div>
+    </footer>
+
+    <script>
+        // 全局变量
+        let currentLinkage = 'none'; // 不连锁、yr连锁、yR连锁
+        let recombinationRate = 5; // 重组率(%)
+        let results = {
+            'YyRr': 0,
+            'Yyrr': 0,
+            'yyRr': 0,
+            'yyrr': 0
+        };
+        let totalCount = 0;
+        let resultsChart;
+
+        // DOM元素
+        const linkageRadios = document.querySelectorAll('input[name="linkage"]');
+        const distanceControl = document.getElementById('distanceControl');
+        const distanceSlider = document.getElementById('distanceSlider');
+        const recombinationRateEl = document.getElementById('recombinationRate');
+        const parent1Gametes = document.getElementById('parent1Gametes');
+        const randomFertilizationBtn = document.getElementById('randomFertilization');
+        const resetExperimentBtn = document.getElementById('resetExperiment');
+        const autoSimulateBtn = document.getElementById('autoSimulate');
+        const autoSimCount = document.getElementById('autoSimCount');
+        
+        // 结果显示元素
+        const lastGamete1 = document.getElementById('lastGamete1');
+        const lastGamete2 = document.getElementById('lastGamete2');
+        const lastZygote = document.getElementById('lastZygote');
+        const actualRatio = document.getElementById('actualRatio');
+        const theoreticalRatio = document.getElementById('theoreticalRatio');
+        
+        // 初始化图表
+        function initChart() {
+            const ctx = document.getElementById('resultsChart').getContext('2d');
+            resultsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['YyRr', 'Yyrr', 'yyRr', 'yyrr'],
+                    datasets: [{
+                        // 移除了label属性，不再显示"基因型数量"
+                        data: [0, 0, 0, 0],
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.7)',
+                            'rgba(16, 185, 129, 0.7)',
+                            'rgba(139, 92, 246, 0.7)',
+                            'rgba(100, 116, 139, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(59, 130, 246, 1)',
+                            'rgba(16, 185, 129, 1)',
+                            'rgba(139, 92, 246, 1)',
+                            'rgba(100, 116, 139, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    // 隐藏图例（蓝方块及文字）
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: '不同基因型出现数量'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '数量'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 绘制染色体
+        function drawChromosomes() {
+            // 计算基因距离（基于重组率）
+            // 重组率0%时距离最小(10px)，20%时距离最大(40px)
+            const geneDistance = 10 + (recombinationRate / 20) * 30;
+            
+            // 亲本1的染色体
+            const parent1Canvas = document.getElementById('parent1Chromosomes');
+            const parent1Ctx = parent1Canvas.getContext('2d');
+            parent1Ctx.clearRect(0, 0, parent1Canvas.width, parent1Canvas.height);
+            
+            // 亲本2的染色体
+            const parent2Canvas = document.getElementById('parent2Chromosomes');
+            const parent2Ctx = parent2Canvas.getContext('2d');
+            parent2Ctx.clearRect(0, 0, parent2Canvas.width, parent2Canvas.height);
+            
+            // 设置绘图参数
+            const centerX = parent1Canvas.width / 2;
+            const centerY = parent1Canvas.height / 2;
+            const chromosomeWidth = 6;
+            const mainChromosomeHeight = 60; // 1号和2号染色体高度
+            const minorChromosomeHeight = 40; // 3号和4号染色体高度（比主染色体短）
+            
+            // 绘制亲本1的1号和2号染色体（Y/y）
+            parent1Ctx.fillStyle = '#3B82F6'; // 蓝色
+            
+            // 1号染色体（Y）
+            parent1Ctx.fillRect(centerX - 40, centerY - mainChromosomeHeight/2, chromosomeWidth, mainChromosomeHeight);
+            parent1Ctx.font = 'bold 14px Arial';
+            parent1Ctx.fillText('Y', centerX - 50, centerY - 20); // Y标记位置固定
+            
+            // 2号染色体（y）
+            parent1Ctx.fillRect(centerX - 20, centerY - mainChromosomeHeight/2, chromosomeWidth, mainChromosomeHeight);
+            parent1Ctx.font = 'bold 14px Arial';
+            parent1Ctx.fillText('y', centerX - 10, centerY - 20); // y标记位置固定
+            
+            // 3号和4号染色体（R/r相关）
+            parent1Ctx.fillStyle = '#10B981'; // 绿色
+            
+            // 3号染色体
+            parent1Ctx.fillRect(centerX + 10, centerY - minorChromosomeHeight/2, chromosomeWidth, minorChromosomeHeight);
+            // 4号染色体
+            parent1Ctx.fillRect(centerX + 30, centerY - minorChromosomeHeight/2, chromosomeWidth, minorChromosomeHeight);
+            
+            // 根据连锁情况绘制R/r基因，位置随距离变化
+            parent1Ctx.font = 'bold 14px Arial';
+            
+            if (currentLinkage === 'none') {
+                // 不连锁：R在3号，r在4号
+                parent1Ctx.fillText('R', centerX + 0, centerY - 10);
+                parent1Ctx.fillText('r', centerX + 40, centerY - 10);
+                
+                // 更新配子比例
+                parent1Gametes.innerHTML = `
+                    <div>YR: 25%</div>
+                    <div>Yr: 25%</div>
+                    <div>yR: 25%</div>
+                    <div>yr: 25%</div>
+                `;
+            } else if (currentLinkage === 'yr') {
+                // YR/yr连锁：R在1号，r在2号，位置随距离变化
+                // 距离越大，R和r离Y和y越远
+                parent1Ctx.fillText('R', centerX - 50, centerY - 20 + geneDistance);
+                parent1Ctx.fillText('r', centerX - 10, centerY - 20 + geneDistance);
+                
+                // 3号和4号染色体无基因标记
+                parent1Ctx.fillText('', centerX + 0, centerY - 10);
+                parent1Ctx.fillText('', centerX + 40, centerY - 10);
+                
+                // 更新配子比例
+                const nonRecombinant = (100 - recombinationRate) / 2;
+                const recombinant = recombinationRate / 2;
+                parent1Gametes.innerHTML = `
+                    <div>YR: ${nonRecombinant}%</div>
+                    <div>yr: ${nonRecombinant}%</div>
+                    <div>Yr: ${recombinant}%</div>
+                    <div>yR: ${recombinant}%</div>
+                `;
+            } else if (currentLinkage === 'yR') {
+                // Yr/yR连锁：r在1号，R在2号，位置随距离变化
+                parent1Ctx.fillText('r', centerX - 50, centerY - 20 + geneDistance);
+                parent1Ctx.fillText('R', centerX - 10, centerY - 20 + geneDistance);
+                
+                // 3号和4号染色体无基因标记
+                parent1Ctx.fillText('', centerX + 0, centerY - 10);
+                parent1Ctx.fillText('', centerX + 40, centerY - 10);
+                
+                // 更新配子比例
+                const nonRecombinant = (100 - recombinationRate) / 2;
+                const recombinant = recombinationRate / 2;
+                parent1Gametes.innerHTML = `
+                    <div>Yr: ${nonRecombinant}%</div>
+                    <div>yR: ${nonRecombinant}%</div>
+                    <div>YR: ${recombinant}%</div>
+                    <div>yr: ${recombinant}%</div>
+                `;
+            }
+            
+            // 绘制亲本2的染色体（都是隐性基因）
+            parent2Ctx.fillStyle = '#64748B'; // 灰色
+            
+            // 1号染色体（y）
+            parent2Ctx.fillRect(centerX - 40, centerY - mainChromosomeHeight/2, chromosomeWidth, mainChromosomeHeight);
+            parent2Ctx.font = 'bold 14px Arial';
+            parent2Ctx.fillText('y', centerX - 50, centerY - 20);
+            // 2号染色体（y）
+            parent2Ctx.fillRect(centerX - 20, centerY - mainChromosomeHeight/2, chromosomeWidth, mainChromosomeHeight);
+            parent2Ctx.font = 'bold 14px Arial';
+            parent2Ctx.fillText('y', centerX - 10, centerY - 20);
+            
+            // 3号和4号染色体
+            parent2Ctx.fillRect(centerX + 10, centerY - minorChromosomeHeight/2, chromosomeWidth, minorChromosomeHeight);
+            parent2Ctx.fillRect(centerX + 30, centerY - minorChromosomeHeight/2, chromosomeWidth, minorChromosomeHeight);
+            
+            // 亲本2的r基因位置也随距离变化
+            parent2Ctx.font = 'bold 14px Arial';
+            if (currentLinkage === 'none') {
+                // 不连锁
+                parent2Ctx.fillText('r', centerX + 0, centerY - 10);
+                parent2Ctx.fillText('r', centerX + 40, centerY - 10);
+            } else {
+                // 连锁情况
+                parent2Ctx.fillText('r', centerX - 50, centerY - 20 + geneDistance);
+                parent2Ctx.fillText('r', centerX - 10, centerY - 20 + geneDistance);
+            }
+            
+            // 更新理论比例
+            updateTheoreticalRatio();
+        }
+
+        // 计算最大公约数
+        function findGCD(a, b) {
+            return b === 0 ? a : findGCD(b, a % b);
+        }
+        
+        // 计算多个数的最大公约数
+        function findArrayGCD(arr) {
+            return arr.reduce((acc, val) => findGCD(acc, val), arr[0]);
+        }
+
+        // 更新理论比例（使用归一法化简为整数）
+        function updateTheoreticalRatio() {
+            let ratioText = '';
+            
+            if (currentLinkage === 'none') {
+                // 自由组合：1:1:1:1
+                ratioText = 'YyRr : Yyrr : yyRr : yyrr = 1 : 1 : 1 : 1';
+            } else {
+                // 连锁情况
+                const nonRecombinant = (100 - recombinationRate) / 2;
+                const recombinant = recombinationRate / 2;
+                
+                // 获取理论比例值
+                let values;
+                if (currentLinkage === 'yr') {
+                    // YR/yr连锁
+                    values = [nonRecombinant, recombinant, recombinant, nonRecombinant];
+                } else {
+                    // Yr/yR连锁
+                    values = [recombinant, nonRecombinant, nonRecombinant, recombinant];
+                }
+                
+                // 转换为整数（乘以2消除小数）
+                const integerValues = values.map(v => Math.round(v * 2));
+                
+                // 找到最大公约数进行简化
+                const gcd = findArrayGCD(integerValues);
+                const simplified = integerValues.map(v => Math.round(v / gcd));
+                
+                ratioText = `YyRr : Yyrr : yyRr : yyrr = ${simplified[0]} : ${simplified[1]} : ${simplified[2]} : ${simplified[3]}`;
+            }
+            
+            theoreticalRatio.textContent = ratioText;
+        }
+
+        // 产生亲本1的配子
+        function generateParent1Gamete() {
+            const rand = Math.random() * 100;
+            
+            if (currentLinkage === 'none') {
+                // 自由组合：四种配子各25%
+                if (rand < 25) return 'YR';
+                else if (rand < 50) return 'Yr';
+                else if (rand < 75) return 'yR';
+                else return 'yr';
+            } else if (currentLinkage === 'yr') {
+                // YR/yr连锁
+                const nonRecombinant = (100 - recombinationRate) / 2;
+                const recombinant = recombinationRate / 2;
+                
+                if (rand < nonRecombinant) return 'YR';
+                else if (rand < nonRecombinant + nonRecombinant) return 'yr';
+                else if (rand < nonRecombinant + nonRecombinant + recombinant) return 'Yr';
+                else return 'yR';
+            } else {
+                // Yr/yR连锁
+                const nonRecombinant = (100 - recombinationRate) / 2;
+                const recombinant = recombinationRate / 2;
+                
+                if (rand < nonRecombinant) return 'Yr';
+                else if (rand < nonRecombinant + nonRecombinant) return 'yR';
+                else if (rand < nonRecombinant + nonRecombinant + recombinant) return 'YR';
+                else return 'yr';
+            }
+        }
+
+        // 产生亲本2的配子（只能是yr）
+        function generateParent2Gamete() {
+            return 'yr';
+        }
+
+        // 计算受精卵基因型
+        function calculateZygote(gamete1, gamete2) {
+            // 配子2固定为yr
+            const allele1 = gamete1[0] + gamete2[0];
+            const allele2 = gamete1[1] + gamete2[1];
+            
+            // 排序等位基因（显性在前）
+            const sortedAllele1 = allele1.split('').sort((a, b) => {
+                if (a === b) return 0;
+                if (a === a.toUpperCase()) return -1;
+                return 1;
+            }).join('');
+            
+            const sortedAllele2 = allele2.split('').sort((a, b) => {
+                if (a === b) return 0;
+                if (a === a.toUpperCase()) return -1;
+                return 1;
+            }).join('');
+            
+            return sortedAllele1 + sortedAllele2;
+        }
+
+        // 更新实验结果
+        function updateResults(zygote) {
+            // 更新计数
+            results[zygote]++;
+            totalCount++;
+            
+            // 更新表格
+            document.getElementById('countYyRr').textContent = results['YyRr'];
+            document.getElementById('countYyrr').textContent = results['Yyrr'];
+            document.getElementById('countyyRr').textContent = results['yyRr'];
+            document.getElementById('countyyrr').textContent = results['yyrr'];
+            document.getElementById('totalCount').textContent = totalCount;
+            
+            // 更新百分比
+            document.getElementById('percentYyRr').textContent = ((results['YyRr'] / totalCount) * 100).toFixed(1) + '%';
+            document.getElementById('percentYyrr').textContent = ((results['Yyrr'] / totalCount) * 100).toFixed(1) + '%';
+            document.getElementById('percentyyRr').textContent = ((results['yyRr'] / totalCount) * 100).toFixed(1) + '%';
+            document.getElementById('percentyyrr').textContent = ((results['yyrr'] / totalCount) * 100).toFixed(1) + '%';
+            
+            // 更新图表
+            resultsChart.data.datasets[0].data = [
+                results['YyRr'],
+                results['Yyrr'],
+                results['yyRr'],
+                results['yyrr']
+            ];
+            resultsChart.update();
+            
+            // 更新实际比例（使用归一法化简为整数）
+            if (totalCount > 0) {
+                // 获取当前计数
+                const counts = [
+                    results['YyRr'],
+                    results['Yyrr'],
+                    results['yyRr'],
+                    results['yyrr']
+                ];
+                
+                // 过滤掉0值，避免影响GCD计算
+                const nonZeroCounts = counts.filter(v => v > 0);
+                
+                // 确定比例基数（最小非零计数）
+                const base = nonZeroCounts.length > 0 ? Math.min(...nonZeroCounts) : 1;
+                
+                // 计算比例并四舍五入为整数
+                const ratio = counts.map(v => Math.round(v / base));
+                
+                actualRatio.textContent = `YyRr : Yyrr : yyRr : yyrr = ${ratio[0]} : ${ratio[1]} : ${ratio[2]} : ${ratio[3]}`;
+            }
+        }
+
+        // 单次随机结合
+        function singleFertilization() {
+            const gamete1 = generateParent1Gamete();
+            const gamete2 = generateParent2Gamete();
+            const zygote = calculateZygote(gamete1, gamete2);
+            
+            // 更新最近一次结果显示
+            lastGamete1.textContent = gamete1;
+            lastGamete2.textContent = gamete2;
+            lastZygote.textContent = zygote;
+            
+            // 更新结果统计
+            updateResults(zygote);
+        }
+
+        // 自动模拟多次
+        function autoSimulate() {
+            const count = parseInt(autoSimCount.value) || 1000;
+            autoSimulateBtn.disabled = true;
+            autoSimulateBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i>模拟中...';
+            
+            // 分批处理以避免浏览器冻结
+            let completed = 0;
+            const batchSize = Math.min(100, count);
+            
+            function processBatch() {
+                const batchEnd = Math.min(completed + batchSize, count);
+                for (let i = completed; i < batchEnd; i++) {
+                    singleFertilization();
+                }
+                completed = batchEnd;
+                
+                if (completed < count) {
+                    requestAnimationFrame(processBatch);
+                } else {
+                    autoSimulateBtn.disabled = false;
+                    autoSimulateBtn.innerHTML = '<i class="fa fa-play mr-2"></i>自动模拟';
+                }
+            }
+            
+            processBatch();
+        }
+
+        // 重置实验 - 清空所有记录和设置
+        function resetExperiment() {
+            // 重置结果数据
+            results = {
+                'YyRr': 0,
+                'Yyrr': 0,
+                'yyRr': 0,
+                'yyrr': 0
+            };
+            totalCount = 0;
+            
+            // 重置设置参数
+            currentLinkage = 'none';
+            recombinationRate = 5;
+            distanceSlider.value = 5;
+            recombinationRateEl.textContent = '5%';
+            
+            // 重置连锁选择为"不连锁"
+            document.querySelector('input[name="linkage"][value="none"]').checked = true;
+            distanceControl.classList.add('hidden');
+            
+            // 重置显示内容
+            lastGamete1.textContent = '--';
+            lastGamete2.textContent = '--';
+            lastZygote.textContent = '--';
+            actualRatio.textContent = 'YyRr : Yyrr : yyRr : yyrr = 0 : 0 : 0 : 0';
+            
+            // 重置配子比例显示
+            parent1Gametes.innerHTML = `
+                <div>YR: 25%</div>
+                <div>Yr: 25%</div>
+                <div>yR: 25%</div>
+                <div>yr: 25%</div>
+            `;
+            
+            // 更新表格和图表
+            document.getElementById('countYyRr').textContent = '0';
+            document.getElementById('countYyrr').textContent = '0';
+            document.getElementById('countyyRr').textContent = '0';
+            document.getElementById('countyyrr').textContent = '0';
+            document.getElementById('totalCount').textContent = '0';
+            
+            document.getElementById('percentYyRr').textContent = '0%';
+            document.getElementById('percentYyrr').textContent = '0%';
+            document.getElementById('percentyyRr').textContent = '0%';
+            document.getElementById('percentyyrr').textContent = '0%';
+            
+            resultsChart.data.datasets[0].data = [0, 0, 0, 0];
+            resultsChart.update();
+            
+            // 重新绘制染色体
+            drawChromosomes();
+        }
+
+        // 事件监听器
+        linkageRadios.forEach(radio => {
+            radio.addEventListener('change', () => {
+                currentLinkage = document.querySelector('input[name="linkage"]:checked').value;
+                
+                // 显示或隐藏距离控制
+                if (currentLinkage === 'none') {
+                    distanceControl.classList.add('hidden');
+                } else {
+                    distanceControl.classList.remove('hidden');
+                }
+                
+                drawChromosomes();
+            });
+        });
+
+        distanceSlider.addEventListener('input', () => {
+            recombinationRate = parseInt(distanceSlider.value);
+            recombinationRateEl.textContent = `${recombinationRate}%`;
+            drawChromosomes(); // 实时更新基因位置
+        });
+
+        randomFertilizationBtn.addEventListener('click', () => {
+            // 添加按钮点击效果
+            randomFertilizationBtn.classList.add('scale-95');
+            setTimeout(() => randomFertilizationBtn.classList.remove('scale-95'), 150);
+            
+            singleFertilization();
+        });
+
+        resetExperimentBtn.addEventListener('click', () => {
+            // 添加按钮点击效果
+            resetExperimentBtn.classList.add('scale-95');
+            setTimeout(() => resetExperimentBtn.classList.remove('scale-95'), 150);
+            
+            resetExperiment();
+        });
+
+        autoSimulateBtn.addEventListener('click', autoSimulate);
+
+        // 初始化
+        window.addEventListener('load', () => {
+            initChart();
+            drawChromosomes();
+        });
+    </script>
+
+
+    </body></html>

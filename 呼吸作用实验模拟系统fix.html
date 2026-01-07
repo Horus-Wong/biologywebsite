@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生物呼吸作用实验模拟系统</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background-color: #f0f7ff;
+            color: #333;
+            margin: 0;
+            padding: 15px;
+            line-height: 1.5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            padding: 20px;
+            overflow: hidden;
+        }
+        
+        header {
+            text-align: center;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e0f0ff;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: #2c5aa0;
+            margin-bottom: 8px;
+            font-size: 1.6rem;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .experiment-principle {
+            background-color: #f9fdff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid #d8e8f5;
+            font-size: 0.9rem;
+        }
+        
+        .principle-title {
+            font-size: 1.1rem;
+            color: #2c5aa0;
+            margin-top: 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #d8e8f5;
+        }
+        
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .panel {
+            flex: 1;
+            min-width: 300px;
+            background-color: #f9fdff;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            border: 1px solid #d8e8f5;
+        }
+        
+        .panel-title {
+            font-size: 1.1rem;
+            color: #2c5aa0;
+            margin-top: 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #d8e8f5;
+        }
+        
+        .components {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 12px;
+        }
+        
+        .component {
+            width: 140px;
+            height: 140px;
+            border: 2px dashed #8bb8e8;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: grab;
+            background-color: white;
+            transition: all 0.2s;
+            padding: 12px;
+            text-align: center;
+        }
+        
+        .component:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-color: #2c5aa0;
+        }
+        
+        .component-icon {
+            width: 70px;
+            height: 70px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .component-name {
+            font-size: 0.9rem;
+            color: #2c5aa0;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+        
+        .workspace {
+            min-height: 350px;
+            border: 2px dashed #c1d9f0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 12px;
+            position: relative;
+            background-color: #fdfdfd;
+        }
+        
+        .connection-area {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            min-height: 180px;
+            position: relative;
+        }
+        
+        .apparatus {
+            width: 100px;
+            height: 150px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .tube {
+            width: 5px;
+            height: 110px;
+            background-color: #aaa;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            top: 0;
+        }
+        
+        .flask {
+            width: 70px;
+            height: 55px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border: 2px solid #666;
+            border-radius: 0 0 25px 25px;
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            overflow: hidden;
+        }
+        
+        .flask-content {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            bottom: 0;
+        }
+        
+        .balloon {
+            width: 65px;
+            height: 65px;
+            background-color: #ff9e9e;
+            border-radius: 50%;
+            position: absolute;
+            bottom: 55px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .connection-line {
+            position: absolute;
+            height: 5px;
+            background-color: #4a90e2;
+            z-index: 1;
+            top: 55px;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 10px 20px;
+            background-color: #2c5aa0;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            background-color: #1d3d6f;
+            transform: translateY(-2px);
+        }
+        
+        button.reset {
+            background-color: #e74c3c;
+        }
+        
+        button.reset:hover {
+            background-color: #c0392b;
+        }
+        
+        .feedback {
+            background-color: #e8f4fd;
+            border-left: 4px solid #2c5aa0;
+            padding: 12px 15px;
+            margin-top: 20px;
+            border-radius: 0 6px 6px 0;
+            font-size: 0.9rem;
+        }
+        
+        .feedback-title {
+            font-weight: bold;
+            color: #2c5aa0;
+            margin-bottom: 6px;
+            font-size: 0.95rem;
+        }
+        
+        .correct {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        
+        .incorrect {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        
+        .instructions {
+            background-color: #f0f9ff;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 15px;
+            font-size: 0.85rem;
+        }
+        
+        .instructions h3 {
+            color: #2c5aa0;
+            margin-top: 0;
+            font-size: 1rem;
+            margin-bottom: 8px;
+        }
+        
+        .instructions ul {
+            padding-left: 18px;
+            margin: 0;
+        }
+        
+        .instructions li {
+            margin-bottom: 4px;
+            line-height: 1.3;
+        }
+        
+        .apparatus-label {
+            text-align: center;
+            margin-top: 8px;
+            font-size: 0.85rem;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .yeast {
+            background-color: #f9e79f;
+        }
+        
+        .naoh {
+            background-color: #a9dfbf;
+        }
+        
+        .limewater {
+            background-color: #d6eaf8;
+        }
+        
+        .selected {
+            border-color: #2c5aa0;
+            box-shadow: 0 0 0 2px rgba(44, 90, 160, 0.2);
+        }
+        
+        .highlight {
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(44, 90, 160, 0.4); }
+            70% { box-shadow: 0 0 0 8px rgba(44, 90, 160, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(44, 90, 160, 0); }
+        }
+        
+        .result {
+            font-weight: bold;
+            margin-top: 8px;
+            padding: 6px;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        
+        .success {
+            background-color: #d5f4e6;
+            color: #27ae60;
+        }
+        
+        .failure {
+            background-color: #fadbd8;
+            color: #e74c3c;
+        }
+        
+        .remove-btn {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 20px;
+            height: 20px;
+            background-color: #e74c3c;
+            color: white;
+            border-radius: 50%;
+            border: none;
+            font-size: 12px;
+            cursor: pointer;
+            z-index: 10;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* 简化图形样式 */
+        .simple-icon {
+            position: relative;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* 气球简化图形 */
+        .balloon-icon {
+            width: 48px;
+            height: 48px;
+            background-color: #ff9e9e;
+            border-radius: 50%;
+            position: relative;
+        }
+        
+        /* 锥形瓶简化图形 */
+        .flask-icon {
+            width: 42px;
+            height: 52px;
+            position: relative;
+        }
+        
+        .flask-body-icon {
+            width: 42px;
+            height: 38px;
+            background-color: #e0e0e0;
+            border: 2px solid #666;
+            border-top: none;
+            border-radius: 0 0 18px 18px;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+        }
+        
+        .flask-neck-icon {
+            width: 22px;
+            height: 14px;
+            background-color: #e0e0e0;
+            border: 2px solid #666;
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+            position: absolute;
+            top: 0;
+            left: 10px;
+        }
+        
+        .flask-tube-left-icon {
+            width: 14px;
+            height: 2px;
+            background-color: #666;
+            position: absolute;
+            top: 7px;
+            left: -14px;
+        }
+        
+        .flask-tube-right-icon {
+            width: 14px;
+            height: 2px;
+            background-color: #666;
+            position: absolute;
+            top: 7px;
+            right: -14px;
+        }
+        
+        .flask-liquid-icon {
+            width: 100%;
+            height: 70%;
+            position: absolute;
+            bottom: 0;
+            border-radius: 0 0 16px 16px;
+        }
+        
+        .flask-yeast-icon {
+            background-color: #f9e79f;
+        }
+        
+        .flask-naoh-icon {
+            background-color: #a9dfbf;
+        }
+        
+        .flask-limewater-icon {
+            background-color: #d6eaf8;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .components {
+                justify-content: center;
+            }
+            
+            .connection-area {
+                flex-direction: column;
+                align-items: center;
+                gap: 30px;
+            }
+            
+            .connection-line {
+                display: none;
+            }
+            
+            h1 {
+                font-size: 1.4rem;
+            }
+            
+            .subtitle {
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>生物呼吸作用实验模拟系统</h1>
+            <p class="subtitle">交大附中生物组陈彤</p>
+        </header>
+        
+        <div class="experiment-principle">
+            <h2 class="principle-title">实验原理</h2>
+            <div class="principle-content">
+                <h3>呼吸作用化学反应式</h3>
+                <ul>
+                    <li><strong>有氧呼吸</strong>：C₆H₁₂O₆ + 6O₂ +6H₂O  —酶→ 6CO₂ + 12H₂O + 大量能量</li>
+                    <li><strong>无氧呼吸（酵母菌酒精发酵）</strong>：C₆H₁₂O₆  —酶→ 2C₂H₅OH + 2CO₂ + 少量能量</li>
+                </ul>
+                
+                <h3>实验设计原理</h3>
+                <ul>
+                    <li><strong>有氧呼吸验证</strong>：需要氧气参与，所以用气球泵入空气提供O₂</li>
+                    <li><strong>无氧呼吸验证</strong>：不需要氧气，装置必须密封，防止空气进入</li>
+                    <li><strong>CO₂检测</strong>：CO₂ + Ca(OH)₂ → CaCO₃↓ + H₂O（澄清石灰水变浑浊）</li>
+                    <li><strong>酒精检测</strong>：酸性重铬酸钾溶液变灰绿色</li>
+                    <li><strong>NaOH作用</strong>：2NaOH + CO₂ → Na₂CO₃ + H₂O（吸收空气中的CO₂，排除干扰）</li>
+                    <li><strong>气球作用</strong>：在有氧呼吸装置中作为气泵，泵入空气提供氧气</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="panel">
+                <h2 class="panel-title">实验准备区</h2>
+                <p>从下方选择实验组件，拖放到右侧实验操作区（可重复选择同一组件）：</p>
+                
+                <div class="components">
+                    <div class="component" data-type="balloon" draggable="true">
+                        <div class="component-icon">
+                            <div class="simple-icon">
+                                <div class="balloon-icon"></div>
+                            </div>
+                        </div>
+                        <div class="component-name">气球</div>
+                    </div>
+                    
+                    <div class="component" data-type="yeast" draggable="true">
+                        <div class="component-icon">
+                            <div class="simple-icon">
+                                <div class="flask-icon">
+                                    <div class="flask-body-icon">
+                                        <div class="flask-liquid-icon flask-yeast-icon"></div>
+                                    </div>
+                                    <div class="flask-neck-icon"></div>
+                                    <div class="flask-tube-left-icon"></div>
+                                    <div class="flask-tube-right-icon"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="component-name">酵母菌锥形瓶</div>
+                    </div>
+                    
+                    <div class="component" data-type="naoh" draggable="true">
+                        <div class="component-icon">
+                            <div class="simple-icon">
+                                <div class="flask-icon">
+                                    <div class="flask-body-icon">
+                                        <div class="flask-liquid-icon flask-naoh-icon"></div>
+                                    </div>
+                                    <div class="flask-neck-icon"></div>
+                                    <div class="flask-tube-left-icon"></div>
+                                    <div class="flask-tube-right-icon"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="component-name">NaOH洗气瓶</div>
+                    </div>
+                    
+                    <div class="component" data-type="limewater" draggable="true">
+                        <div class="component-icon">
+                            <div class="simple-icon">
+                                <div class="flask-icon">
+                                    <div class="flask-body-icon">
+                                        <div class="flask-liquid-icon flask-limewater-icon"></div>
+                                    </div>
+                                    <div class="flask-neck-icon"></div>
+                                    <div class="flask-tube-left-icon"></div>
+                                    <div class="flask-tube-right-icon"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="component-name">澄清石灰水</div>
+                    </div>
+                </div>
+                
+                <div class="instructions">
+                    <h3>装置功能说明</h3>
+                    <ul>
+                        <li><strong>气球</strong>：作为气泵，向有氧呼吸装置中泵入空气，提供氧气</li>
+                        <li><strong>酵母菌锥形瓶</strong>：含有酵母菌培养液，呼吸作用发生场所</li>
+                        <li><strong>NaOH洗气瓶</strong>：盛有NaOH溶液，吸收空气中的CO₂，排除实验干扰</li>
+                        <li><strong>澄清石灰水</strong>：盛有澄清石灰水，遇CO₂变浑浊，用于检测CO₂生成</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2 class="panel-title">实验操作区</h2>
+                <p>构建实验装置：将组件拖放到下方区域（可点击组件上的×号删除）</p>
+                
+                <div class="workspace" id="workspace">
+                    <div class="connection-area" id="connection-area">
+                        <!-- 装置将在这里被创建 -->
+                    </div>
+                    
+                    <div class="result" id="result-message"></div>
+                </div>
+                
+                <div class="controls">
+                    <button id="check-aerobic">验证有氧呼吸装置</button>
+                    <button id="check-anaerobic">验证无氧呼吸装置</button>
+                    <button class="reset" id="reset-btn">重置实验</button>
+                </div>
+                
+                <div class="feedback">
+                    <div class="feedback-title">实验指导</div>
+                    <div id="feedback-text">
+                        <p>请从左侧选择实验组件，拖放到操作区构建实验装置。</p>
+                        <p><strong>有氧呼吸正确装置（两种）：</strong></p>
+                        <ol>
+                            <li>气球(气泵) → NaOH洗气瓶(吸收空气中CO₂) → 酵母菌锥形瓶(有氧呼吸) → 澄清石灰水(检测产物CO₂)</li>
+                            <li>气球(气泵) → NaOH洗气瓶(吸收空气中CO₂) → 澄清石灰水(验证空气中CO₂是否除尽) → 酵母菌锥形瓶(有氧呼吸) → 澄清石灰水(检测产物CO₂)</li>
+                        </ol>
+                        <p><strong>无氧呼吸正确装置：</strong></p>
+                        <ul>
+                            <li>酵母菌锥形瓶(无氧呼吸，装置密封) → 澄清石灰水(检测产物CO₂)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 实验组件数据
+        const components = {
+            balloon: { name: "气球", icon: "", description: "作为气泵，向装置中泵入空气提供氧气" },
+            yeast: { name: "酵母菌锥形瓶", icon: "", description: "含有酵母菌培养液，呼吸作用发生场所" },
+            naoh: { name: "NaOH洗气瓶", icon: "", description: "盛有NaOH溶液，用于吸收空气中的CO₂" },
+            limewater: { name: "澄清石灰水", icon: "", description: "盛有澄清石灰水，遇CO₂变浑浊" }
+        };
+
+        // 当前工作区中的装置（每个装置有唯一ID）
+        let workspaceApparatus = [];
+        let apparatusIdCounter = 1;
+        
+        // 正确装置配置 - 根据正确的科学原理
+        const correctConfigurations = {
+            // 有氧呼吸装置1: 气球(气泵) → NaOH洗气瓶 → 酵母菌锥形瓶 → 澄清石灰水
+            aerobic1: ["balloon", "naoh", "yeast", "limewater"],
+            // 有氧呼吸装置2: 气球(气泵) → NaOH洗气瓶 → 澄清石灰水 → 酵母菌锥形瓶 → 澄清石灰水
+            aerobic2: ["balloon", "naoh", "limewater", "yeast", "limewater"],
+            // 无氧呼吸装置: 酵母菌锥形瓶 → 澄清石灰水 (注意：无氧呼吸不需要气球！)
+            anaerobic: ["yeast", "limewater"]
+        };
+        
+        // 初始化拖放功能
+        function initDragAndDrop() {
+            const componentElements = document.querySelectorAll('.component');
+            const workspace = document.getElementById('workspace');
+            const connectionArea = document.getElementById('connection-area');
+            
+            // 为每个组件添加拖拽事件
+            componentElements.forEach(component => {
+                component.addEventListener('dragstart', dragStart);
+                component.addEventListener('click', componentClick);
+            });
+            
+            // 工作区拖放事件
+            workspace.addEventListener('dragover', dragOver);
+            workspace.addEventListener('drop', drop);
+            
+            // 按钮事件
+            document.getElementById('check-aerobic').addEventListener('click', () => checkConfiguration('aerobic'));
+            document.getElementById('check-anaerobic').addEventListener('click', () => checkConfiguration('anaerobic'));
+            document.getElementById('reset-btn').addEventListener('click', resetWorkspace);
+            
+            // 初始化反馈
+            updateFeedback("请从左侧选择实验组件，拖放到操作区构建实验装置。注意：气球是气泵，不是密封装置！");
+        }
+        
+        // 组件点击事件（备用选择方式）
+        function componentClick(event) {
+            const type = event.currentTarget.dataset.type;
+            addApparatusToWorkspace(type);
+        }
+        
+        // 拖拽开始
+        function dragStart(event) {
+            event.dataTransfer.setData('text/plain', event.target.dataset.type);
+            event.currentTarget.classList.add('selected');
+        }
+        
+        // 拖拽经过
+        function dragOver(event) {
+            event.preventDefault();
+        }
+        
+        // 放置组件
+        function drop(event) {
+            event.preventDefault();
+            const type = event.dataTransfer.getData('text/plain');
+            
+            if (type) {
+                addApparatusToWorkspace(type);
+            }
+            
+            // 移除选中样式
+            document.querySelectorAll('.component').forEach(c => c.classList.remove('selected'));
+        }
+        
+        // 添加装置到工作区
+        function addApparatusToWorkspace(type) {
+            // 创建装置对象，包含唯一ID
+            const apparatus = {
+                id: apparatusIdCounter++,
+                type: type,
+                name: components[type].name,
+                description: components[type].description
+            };
+            
+            // 添加到数组
+            workspaceApparatus.push(apparatus);
+            
+            // 更新UI
+            renderWorkspace();
+            
+            // 更新反馈
+            updateFeedback(`已添加${apparatus.name}：${apparatus.description}`);
+        }
+        
+        // 从工作区移除装置
+        function removeApparatusFromWorkspace(id) {
+            // 从数组中移除
+            const index = workspaceApparatus.findIndex(app => app.id === id);
+            if (index !== -1) {
+                const removedApp = workspaceApparatus.splice(index, 1)[0];
+                updateFeedback(`已移除${removedApp.name}`);
+            }
+            
+            // 更新UI
+            renderWorkspace();
+        }
+        
+        // 渲染工作区
+        function renderWorkspace() {
+            const connectionArea = document.getElementById('connection-area');
+            
+            // 清空工作区
+            connectionArea.innerHTML = '';
+            
+            // 添加每个装置
+            workspaceApparatus.forEach((apparatus, index) => {
+                const apparatusElement = document.createElement('div');
+                apparatusElement.className = 'apparatus';
+                apparatusElement.dataset.id = apparatus.id;
+                apparatusElement.dataset.type = apparatus.type;
+                
+                let apparatusHTML = '';
+                
+                // 根据类型创建不同装置
+                if (apparatus.type === 'balloon') {
+                    apparatusHTML = `
+                        <div class="balloon">气泵</div>
+                        <div class="apparatus-label">气球</div>
+                    `;
+                } else {
+                    // 锥形瓶类装置
+                    let contentClass = '';
+                    
+                    if (apparatus.type === 'yeast') {
+                        contentClass = 'yeast';
+                    } else if (apparatus.type === 'naoh') {
+                        contentClass = 'naoh';
+                    } else if (apparatus.type === 'limewater') {
+                        contentClass = 'limewater';
+                    }
+                    
+                    apparatusHTML = `
+                        <div class="tube"></div>
+                        <div class="flask">
+                            <div class="flask-content ${contentClass}"></div>
+                        </div>
+                        <div class="apparatus-label">${apparatus.name}</div>
+                    `;
+                }
+                
+                // 添加移除按钮
+                apparatusHTML += `<button class="remove-btn" data-id="${apparatus.id}">×</button>`;
+                
+                apparatusElement.innerHTML = apparatusHTML;
+                connectionArea.appendChild(apparatusElement);
+            });
+            
+            // 添加移除按钮事件监听
+            document.querySelectorAll('.remove-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = parseInt(this.getAttribute('data-id'));
+                    removeApparatusFromWorkspace(id);
+                });
+            });
+            
+            // 添加连接线
+            if (workspaceApparatus.length > 1) {
+                for (let i = 0; i < workspaceApparatus.length - 1; i++) {
+                    const line = document.createElement('div');
+                    line.className = 'connection-line';
+                    
+                    // 计算线的位置和宽度
+                    const startPos = i * (100 / workspaceApparatus.length) + (50 / workspaceApparatus.length);
+                    const endPos = (i + 1) * (100 / workspaceApparatus.length) + (50 / workspaceApparatus.length);
+                    const width = (endPos - startPos) * 4; // 调整宽度
+                    
+                    line.style.left = `${startPos}%`;
+                    line.style.width = `${width}px`;
+                    
+                    connectionArea.appendChild(line);
+                }
+            }
+        }
+        
+        // 验证装置配置
+        function checkConfiguration(configType) {
+            const resultMessage = document.getElementById('result-message');
+            resultMessage.className = 'result';
+            
+            // 获取当前装置类型数组
+            const currentConfig = workspaceApparatus.map(app => app.type);
+            
+            // 确定验证类型名称
+            let typeName = '';
+            let configDescription = '';
+            
+            if (configType === 'aerobic') {
+                typeName = '有氧呼吸装置';
+            } else if (configType === 'anaerobic') {
+                typeName = '无氧呼吸装置';
+                configDescription = '酵母菌锥形瓶 → 澄清石灰水';
+            }
+            
+            // 检查当前配置是否正确
+            let isCorrect = false;
+            let matchedConfig = '';
+            
+            if (configType === 'aerobic') {
+                // 检查是否匹配两种有氧呼吸配置中的任意一种
+                const isCorrect1 = compareConfigurations(currentConfig, correctConfigurations.aerobic1, 'aerobic');
+                const isCorrect2 = compareConfigurations(currentConfig, correctConfigurations.aerobic2, 'aerobic');
+                
+                isCorrect = isCorrect1 || isCorrect2;
+                
+                if (isCorrect1) {
+                    matchedConfig = '气球(气泵) → NaOH洗气瓶 → 酵母菌锥形瓶 → 澄清石灰水';
+                } else if (isCorrect2) {
+                    matchedConfig = '气球(气泵) → NaOH洗气瓶 → 澄清石灰水(验证) → 酵母菌锥形瓶 → 澄清石灰水(检测)';
+                }
+            } else {
+                // 检查无氧呼吸配置
+                isCorrect = compareConfigurations(currentConfig, correctConfigurations.anaerobic, 'anaerobic');
+                matchedConfig = '酵母菌锥形瓶 → 澄清石灰水';
+            }
+            
+            if (isCorrect) {
+                resultMessage.textContent = `✓ ${typeName}正确！澄清石灰水变浑浊，检测到CO₂生成。`;
+                resultMessage.classList.add('success');
+                
+                // 更新反馈
+                let feedbackHTML = `<span class="correct">${typeName}正确！</span><br>`;
+                
+                if (configType === 'aerobic') {
+                    feedbackHTML += `
+                        装置连接顺序：${matchedConfig}<br>
+                        科学原理：气球作为气泵提供空气(氧气)，NaOH吸收空气中的CO₂排除干扰，
+                        酵母菌进行有氧呼吸产生CO₂，澄清石灰水变浑浊证明有氧呼吸产生CO₂。
+                        ${matchedConfig.includes('澄清石灰水(验证)') ? '第一个澄清石灰水不变浑浊，验证空气中CO₂已被完全吸收。' : ''}
+                    `;
+                } else {
+                    feedbackHTML += `
+                        装置连接顺序：${matchedConfig}<br>
+                        科学原理：酵母菌在密封装置中进行无氧呼吸(酒精发酵)产生CO₂，
+                        澄清石灰水变浑浊证明无氧呼吸产生CO₂。注意：无氧呼吸不需要气球！
+                    `;
+                }
+                
+                updateFeedback(feedbackHTML);
+                
+                // 添加高亮效果
+                document.querySelectorAll('.apparatus').forEach(app => {
+                    app.classList.add('highlight');
+                });
+                
+                // 3秒后移除高亮效果
+                setTimeout(() => {
+                    document.querySelectorAll('.apparatus').forEach(app => {
+                        app.classList.remove('highlight');
+                    });
+                }, 3000);
+                
+            } else {
+                resultMessage.textContent = `✗ ${typeName}不正确，请检查装置连接顺序。`;
+                resultMessage.classList.add('failure');
+                
+                // 更新反馈
+                let feedbackHTML = `<span class="incorrect">${typeName}不正确！</span><br>`;
+                
+                if (configType === 'aerobic') {
+                    feedbackHTML += `
+                        正确连接应为以下两种之一：<br>
+                        1. 气球(气泵) → NaOH洗气瓶 → 酵母菌锥形瓶 → 澄清石灰水<br>
+                        2. 气球(气泵) → NaOH洗气瓶 → 澄清石灰水(验证) → 酵母菌锥形瓶 → 澄清石灰水(检测)<br>
+                        注意：有氧呼吸需要气球作为气泵提供氧气，需要NaOH除去空气中的CO₂。
+                    `;
+                } else {
+                    feedbackHTML += `
+                        正确连接应为：${configDescription}<br>
+                        注意：无氧呼吸不需要气球！酵母菌在密封装置中进行无氧呼吸。
+                    `;
+                }
+                
+                // 检查常见错误
+                if (configType === 'anaerobic' && currentConfig.includes('balloon')) {
+                    feedbackHTML += `<br><strong>常见错误</strong>：无氧呼吸不需要气球，因为不需要额外氧气！`;
+                }
+                
+                if (configType === 'aerobic' && !currentConfig.includes('balloon')) {
+                    feedbackHTML += `<br><strong>常见错误</strong>：有氧呼吸需要气球作为气泵提供氧气！`;
+                }
+                
+                updateFeedback(feedbackHTML);
+            }
+        }
+        
+        // 比较配置
+        function compareConfigurations(currentConfig, correctConfig, configType) {
+            // 对于无氧呼吸，不能包含气球
+            if (configType === 'anaerobic' && currentConfig.includes('balloon')) {
+                return false;
+            }
+            
+            // 对于有氧呼吸，必须包含气球
+            if (configType === 'aerobic' && !currentConfig.includes('balloon')) {
+                return false;
+            }
+            
+            // 检查长度是否匹配
+            if (currentConfig.length !== correctConfig.length) {
+                return false;
+            }
+            
+            // 检查每个位置是否匹配
+            for (let i = 0; i < correctConfig.length; i++) {
+                if (currentConfig[i] !== correctConfig[i]) {
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+        
+        // 更新反馈信息
+        function updateFeedback(message) {
+            const feedbackText = document.getElementById('feedback-text');
+            feedbackText.innerHTML = message;
+        }
+        
+        // 重置工作区
+        function resetWorkspace() {
+            workspaceApparatus = [];
+            renderWorkspace();
+            
+            const resultMessage = document.getElementById('result-message');
+            resultMessage.textContent = '';
+            resultMessage.className = 'result';
+            
+            updateFeedback("工作区已清空，请重新选择组件构建实验装置。<br><strong>重要提示：</strong>气球是气泵，不是密封装置！");
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', initDragAndDrop);
+    </script>
+</body>
+</html>

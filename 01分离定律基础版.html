@@ -1,0 +1,523 @@
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>孟德尔性状分离模拟实验</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- 配置Tailwind自定义颜色和字体 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        accent: '#F59E0B',
+                        danger: '#EF4444',
+                        dark: '#1F2937',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .bucket-style {
+                border: 4px solid #8B4513;
+                background-color: rgba(255, 255, 255, 0.8);
+                border-radius: 8px 8px 0 0;
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+            }
+            .ball-orange {
+                background-color: #F97316;
+                color: white;
+            }
+            .ball-blue {
+                background-color: #3B82F6;
+                color: white;
+            }
+            .shake-animation {
+                animation: shake 0.5s ease-in-out;
+            }
+            .float-animation {
+                animation: float 3s ease-in-out infinite;
+            }
+            .pulse-light {
+                animation: pulse-light 2s infinite;
+            }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-5deg); }
+            75% { transform: rotate(5deg); }
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        @keyframes pulse-light {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen font-sans text-dark">
+    <header class="bg-white shadow-md py-6 mb-8">
+        <div class="container mx-auto px-4 text-center">
+            <h1 class="text-[clamp(1.8rem,4vw,2.5rem)] font-bold text-primary mb-2">孟德尔性状分离模拟实验</h1>
+            <p class="text-gray-600 max-w-2xl mx-auto">通过模拟实验，理解遗传因子的分离、配子的随机结合与性状之间的数量关系</p>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 pb-16">
+        <!-- 实验说明 -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-10 max-w-4xl mx-auto">
+            <h2 class="text-xl font-semibold text-dark mb-4 flex items-center">
+                <i class="fa fa-info-circle text-primary mr-2"></i>实验说明
+            </h2>
+            <p class="text-gray-700 mb-4">本实验用两个方框分别代表雌、雄生殖器官，方框内的彩球分别代表雌、雄配子（橙色为D，蓝色为d）。通过随机抓取彩球的组合，模拟生物在生殖过程中雌雄配子的随机结合。</p>
+        </div>
+        
+        <!-- 小桶区域 -->
+        <div class="flex flex-col md:flex-row justify-center items-center gap-8 md:gap-16 mb-12">
+            <!-- 左侧方框 -->
+            <div class="bucket-container relative w-48 h-64 md:w-56 md:h-72">
+                <div class="absolute inset-0 flex items-end justify-center">
+                    <!-- 方框代替桶 -->
+                    <div class="w-full h-4/5 bucket-style flex items-end justify-center p-3">
+                        <!-- 桶内的球，从底部往上摆放 -->
+                        <div id="balls-container-1" class="w-full flex justify-center flex-wrap gap-1 pb-2">
+                            <!-- 球会通过JS动态生成 -->
+                        </div>
+                    </div>
+                </div>
+                <div class="absolute -bottom-8 left-0 right-0 text-center font-medium">雌性生殖器官</div>
+            </div>
+            
+            <!-- 右侧方框 -->
+            <div class="bucket-container relative w-48 h-64 md:w-56 md:h-72">
+                <div class="absolute inset-0 flex items-end justify-center">
+                    <!-- 方框代替桶 -->
+                    <div class="w-full h-4/5 bucket-style flex items-end justify-center p-3">
+                        <!-- 桶内的球，从底部往上摆放 -->
+                        <div id="balls-container-2" class="w-full flex justify-center flex-wrap gap-1 pb-2">
+                            <!-- 球会通过JS动态生成 -->
+                        </div>
+                    </div>
+                </div>
+                <div class="absolute -bottom-8 left-0 right-0 text-center font-medium">雄性生殖器官</div>
+            </div>
+        </div>
+        
+        <!-- 最近抓取结果 -->
+        <div class="text-center mb-8">
+            <h3 class="text-lg font-medium mb-2">最近抓取组合</h3>
+            <div id="last-combination" class="flex justify-center items-center gap-4 h-16">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold border-2 border-gray-300"></div>
+                <span class="text-xl">+</span>
+                <div class="w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold border-2 border-gray-300"></div>
+            </div>
+        </div>
+        
+        <!-- 按钮区域 -->
+        <div class="flex flex-wrap justify-center gap-4 md:gap-6 mb-10">
+            <button id="shake-btn" class="bg-primary hover:bg-primary/90 text-white font-medium py-3 px-6 rounded-lg shadow-md flex items-center transition-all duration-300 hover:scale-105 active:scale-95">
+                <i class="fa fa-random mr-2"></i>晃动小桶
+            </button>
+            
+            <button id="grab-btn" class="bg-secondary hover:bg-secondary/90 text-white font-medium py-3 px-6 rounded-lg shadow-md flex items-center transition-all duration-300 hover:scale-105 active:scale-95">
+                <i class="fa fa-hand-paper-o mr-2"></i>抓取组合
+            </button>
+            
+            <button id="reset-btn" class="bg-danger hover:bg-danger/90 text-white font-medium py-3 px-6 rounded-lg shadow-md flex items-center transition-all duration-300 hover:scale-105 active:scale-95">
+                <i class="fa fa-refresh mr-2"></i>重置实验
+            </button>
+            
+            <div class="flex items-center gap-2">
+                <input type="number" id="auto-count" min="1" max="3000" value="100" class="w-20 border border-gray-300 rounded-lg px-3 py-3 text-center focus:outline-none focus:ring-2 focus:ring-primary">
+                <button id="auto-btn" class="bg-accent hover:bg-accent/90 text-white font-medium py-3 px-6 rounded-lg shadow-md flex items-center transition-all duration-300 hover:scale-105 active:scale-95">
+                    <i class="fa fa-play mr-2"></i>自动模拟
+                </button>
+            </div>
+        </div>
+        
+        <!-- 抓取记录表格 -->
+        <div class="max-w-4xl mx-auto mb-10">
+            <h3 class="text-lg font-medium mb-4 text-center">抓取记录</h3>
+            <div class="overflow-x-auto bg-white rounded-xl shadow-md">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">序号</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">雌性配子</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">雄性配子</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">组合</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results-table" class="bg-white divide-y divide-gray-200">
+                        <!-- 记录将通过JS动态生成 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- 统计表格 -->
+        <div class="max-w-2xl mx-auto">
+            <h3 class="text-lg font-medium mb-4 text-center">统计结果</h3>
+            <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">组合类型</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">次数</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">百分比</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stats-table" class="bg-white divide-y divide-gray-200">
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap">DD</td>
+                            <td class="px-6 py-4 whitespace-nowrap" id="dd-count-1">0</td>
+                            <td class="px-6 py-4 whitespace-nowrap" id="dd-percent-1">0%</td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap">Dd</td>
+                            <td class="px-6 py-4 whitespace-nowrap" id="dd-count-2">0</td>
+                            <td class="px-6 py-4 whitespace-nowrap" id="dd-percent-2">0%</td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap">dd</td>
+                            <td class="px-6 py-4 whitespace-nowrap" id="dd-count-3">0</td>
+                            <td class="px-6 py-4 whitespace-nowrap" id="dd-percent-3">0%</td>
+                        </tr>
+                        <tr class="bg-gray-50 font-medium">
+                            <td class="px-6 py-4 whitespace-nowrap">总计</td>
+                            <td class="px-6 py-4 whitespace-nowrap" id="total-count">0</td>
+                            <td class="px-6 py-4 whitespace-nowrap">100%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-dark text-white py-6">
+        <div class="container mx-auto px-4 text-center">
+            <p>孟德尔性状分离模拟实验&nbsp; 交大附中生物组 陈彤&amp;王自闇© 20250918</p>
+        </div>
+    </footer>
+
+    <script>
+        // 实验数据
+        const experimentData = {
+            bucket1: [], // 第一个桶的球
+            bucket2: [], // 第二个桶的球
+            results: [], // 抓取结果记录
+            counts: {
+                'DD': 0,
+                'Dd': 0,
+                'dD': 0,
+                'dd': 0
+            }
+        };
+        
+        // DOM元素
+        const ballsContainer1 = document.getElementById('balls-container-1');
+        const ballsContainer2 = document.getElementById('balls-container-2');
+        // 获取方框元素（之前是桶的图片）
+        const bucket1 = document.querySelector('.bucket-container:nth-child(1) .bucket-style');
+        const bucket2 = document.querySelector('.bucket-container:nth-child(2) .bucket-style');
+        const shakeBtn = document.getElementById('shake-btn');
+        const grabBtn = document.getElementById('grab-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const autoBtn = document.getElementById('auto-btn');
+        const autoCountInput = document.getElementById('auto-count');
+        const resultsTable = document.getElementById('results-table');
+        const lastCombination = document.getElementById('last-combination');
+        
+        // 初始化实验
+        function initExperiment() {
+            // 每个桶放入10个D和10个d
+            experimentData.bucket1 = Array(10).fill('D').concat(Array(10).fill('d'));
+            experimentData.bucket2 = Array(10).fill('D').concat(Array(10).fill('d'));
+            
+            // 随机打乱
+            shuffleArray(experimentData.bucket1);
+            shuffleArray(experimentData.bucket2);
+            
+            // 重置结果
+            experimentData.results = [];
+            experimentData.counts = {
+                'DD': 0,
+                'Dd': 0,
+                'dD': 0,
+                'dd': 0
+            };
+            
+            // 更新UI
+            renderBalls();
+            updateResultsTable();
+            updateStatsTable();
+            updateLastCombination(null, null);
+        }
+        
+        // 渲染球 - 从底部往上摆放，确保无遮挡
+        function renderBalls() {
+            // 清空容器
+            ballsContainer1.innerHTML = '';
+            ballsContainer2.innerHTML = '';
+            
+            // 渲染第一个桶的球
+            experimentData.bucket1.forEach(letter => {
+                const ball = createBall(letter);
+                ballsContainer1.appendChild(ball);
+            });
+            
+            // 渲染第二个桶的球
+            experimentData.bucket2.forEach(letter => {
+                const ball = createBall(letter);
+                ballsContainer2.appendChild(ball);
+            });
+        }
+        
+        // 创建球元素 - 稍大一些以便清晰展示，无重叠
+        function createBall(letter) {
+            const ball = document.createElement('div');
+            ball.className = `w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shadow-md transition-all duration-300`;
+            
+            if (letter === 'D') {
+                ball.classList.add('ball-orange');
+            } else {
+                ball.classList.add('ball-blue');
+            }
+            
+            ball.textContent = letter;
+            return ball;
+        }
+        
+        // 晃动小桶（打乱球的顺序）
+        function shakeBuckets() {
+            // 添加晃动动画
+            bucket1.classList.add('shake-animation');
+            bucket2.classList.add('shake-animation');
+            
+            // 动画结束后移除类并打乱球
+            setTimeout(() => {
+                bucket1.classList.remove('shake-animation');
+                bucket2.classList.remove('shake-animation');
+                
+                // 打乱球的顺序
+                shuffleArray(experimentData.bucket1);
+                shuffleArray(experimentData.bucket2);
+                
+                // 重新渲染球
+                renderBalls();
+            }, 500);
+        }
+        
+        // 抓取组合
+        function grabCombination() {
+            // 从每个桶随机抓取一个球
+            const index1 = Math.floor(Math.random() * experimentData.bucket1.length);
+            const index2 = Math.floor(Math.random() * experimentData.bucket2.length);
+            
+            const ball1 = experimentData.bucket1[index1];
+            const ball2 = experimentData.bucket2[index2];
+            
+            // 记录结果
+            const result = {
+                id: experimentData.results.length + 1,
+                female: ball1,
+                male: ball2,
+                combination: ball1 + ball2
+            };
+            
+            experimentData.results.push(result);
+            
+            // 更新计数
+            experimentData.counts[result.combination]++;
+            
+            // 更新UI
+            updateResultsTable();
+            updateStatsTable();
+            updateLastCombination(ball1, ball2);
+            
+            // 闪烁效果突出显示最新记录
+            const newRow = resultsTable.querySelector('tr:first-child');
+            if (newRow) {
+                newRow.classList.add('bg-blue-50');
+                setTimeout(() => {
+                    newRow.classList.remove('bg-blue-50');
+                }, 1000);
+            }
+        }
+        
+        // 自动模拟
+        function autoSimulate() {
+            const count = parseInt(autoCountInput.value);
+            
+            // 验证输入
+            if (isNaN(count) || count < 1 || count > 3000) {
+                alert('请输入1-3000之间的整数');
+                return;
+            }
+            
+            // 禁用按钮防止重复点击
+            disableButtons(true);
+            
+            // 为大量模拟优化，减少DOM更新频率
+            const batchSize = 100; // 每100次更新一次UI
+            let current = 0;
+            let batchCount = 0;
+            
+            const interval = setInterval(() => {
+                if (current < count) {
+                    grabCombination();
+                    current++;
+                    batchCount++;
+                    
+                    // 批量更新UI，提高性能
+                    if (batchCount >= batchSize || current >= count) {
+                        updateResultsTable();
+                        updateStatsTable();
+                        updateLastCombination(
+                            experimentData.results[experimentData.results.length - 1]?.female,
+                            experimentData.results[experimentData.results.length - 1]?.male
+                        );
+                        batchCount = 0;
+                    }
+                } else {
+                    clearInterval(interval);
+                    disableButtons(false);
+                }
+            }, count > 1000 ? 10 : 200); // 大量模拟时加快速度
+        }
+        
+        // 禁用/启用按钮
+        function disableButtons(disabled) {
+            shakeBtn.disabled = disabled;
+            grabBtn.disabled = disabled;
+            resetBtn.disabled = disabled;
+            autoBtn.disabled = disabled;
+            autoCountInput.disabled = disabled;
+            
+            if (disabled) {
+                shakeBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                grabBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                resetBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                autoBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                shakeBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                grabBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                resetBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                autoBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+        
+        // 更新结果表格
+        function updateResultsTable() {
+            resultsTable.innerHTML = '';
+            
+            // 只显示最近的50条记录，避免大量数据导致性能问题
+            const displayResults = experimentData.results.slice(-50).reverse();
+            
+            displayResults.forEach(result => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50 transition-colors';
+                
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">${result.id}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${result.female === 'D' ? 'ball-orange' : 'ball-blue'}">
+                            ${result.female}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${result.male === 'D' ? 'ball-orange' : 'ball-blue'}">
+                            ${result.male}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap font-medium">${result.combination}</td>
+                `;
+                
+                resultsTable.appendChild(row);
+            });
+        }
+        
+        // 更新统计表格
+        function updateStatsTable() {
+            const total = experimentData.results.length;
+            
+            // 计算Dd和dD的总和（因为它们在表型上是相同的）
+            const ddCount = experimentData.counts['DD'];
+            const ddCombined = experimentData.counts['Dd'] + experimentData.counts['dD'];
+            const ddTotal = experimentData.counts['dd'];
+            
+            // 计算百分比
+            const ddPercent = total > 0 ? Math.round((ddCount / total) * 100) : 0;
+            const ddCombinedPercent = total > 0 ? Math.round((ddCombined / total) * 100) : 0;
+            const ddTotalPercent = total > 0 ? Math.round((ddTotal / total) * 100) : 0;
+            
+            // 更新DOM（修复了ID重复的问题）
+            document.getElementById('dd-count-1').textContent = ddCount;
+            document.getElementById('dd-percent-1').textContent = `${ddPercent}%`;
+            
+            document.getElementById('dd-count-2').textContent = ddCombined;
+            document.getElementById('dd-percent-2').textContent = `${ddCombinedPercent}%`;
+            
+            document.getElementById('dd-count-3').textContent = ddTotal;
+            document.getElementById('dd-percent-3').textContent = `${ddTotalPercent}%`;
+            
+            document.getElementById('total-count').textContent = total;
+        }
+        
+        // 更新最近抓取组合显示
+        function updateLastCombination(ball1, ball2) {
+            if (!ball1 || !ball2) {
+                lastCombination.innerHTML = `
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold border-2 border-gray-300"></div>
+                    <span class="text-xl">+</span>
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold border-2 border-gray-300"></div>
+                `;
+                return;
+            }
+            
+            lastCombination.innerHTML = `
+                <div class="w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold ${ball1 === 'D' ? 'ball-orange' : 'ball-blue'} pulse-light">${ball1}</div>
+                <span class="text-xl">+</span>
+                <div class="w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold ${ball2 === 'D' ? 'ball-orange' : 'ball-blue'} pulse-light">${ball2}</div>
+            `;
+        }
+        
+        // 数组洗牌（随机打乱顺序）
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+        
+        // 事件监听
+        shakeBtn.addEventListener('click', shakeBuckets);
+        grabBtn.addEventListener('click', grabCombination);
+        resetBtn.addEventListener('click', initExperiment);
+        autoBtn.addEventListener('click', autoSimulate);
+        
+        // 初始化实验
+        initExperiment();
+    </script>
+
+
+
+    </body></html>

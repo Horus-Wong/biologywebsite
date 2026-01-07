@@ -1,0 +1,1103 @@
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>孟德尔自由组合定律模拟</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    
+    <!-- 配置Tailwind自定义颜色 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'deep-red': '#C41E3A',    // Y因子颜色
+                        'light-red': '#FF6B6B',   // y因子颜色
+                        'deep-blue': '#0F52BA',   // R因子颜色
+                        'light-blue': '#6B9FFF',  // r因子颜色
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .ball-container {
+                position: relative;
+                overflow: hidden;
+                height: 220px; /* 增加容器高度确保小球可见 */
+                border: 2px solid #ddd;
+            }
+            .gene-ball {
+                position: absolute;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: bold;
+                color: white;
+                transition: all 0.3s ease;
+                z-index: 2;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                border: 1px solid rgba(255,255,255,0.3);
+            }
+            .gene-ball:hover {
+                transform: scale(1.2);
+                z-index: 10;
+            }
+            .stats-table {
+                @apply w-full border-collapse border border-gray-300;
+            }
+            .stats-table th, .stats-table td {
+                @apply border border-gray-300 p-2 text-center;
+            }
+            .stats-table th {
+                @apply bg-gray-100 font-semibold;
+            }
+            .highlight-row {
+                @apply bg-yellow-50 transition-colors duration-300;
+            }
+            .gamete-type {
+                @apply px-2 py-1 rounded text-white font-medium text-sm;
+            }
+            .gamete-type-invalid {
+                @apply px-2 py-1 rounded text-gray-400 font-medium text-sm bg-gray-100 line-through;
+            }
+            .female-gamete {
+                @apply bg-purple-600;
+            }
+            .male-gamete {
+                @apply bg-blue-600;
+            }
+            .gene-label {
+                @apply text-center font-medium py-2 bg-gray-50 rounded-t border-b border-gray-200 z-30 relative;
+            }
+            .input-group {
+                @apply flex items-center gap-2 mb-2;
+            }
+            .input-group label {
+                @apply text-sm text-gray-600 w-16;
+            }
+            .input-group input {
+                @apply w-16 border rounded p-1 text-center;
+            }
+            .gamete-probability {
+                @apply text-xs opacity-75 ml-1;
+            }
+            .gamete-row {
+                @apply flex justify-center gap-3 mb-1;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <header class="text-center mb-10">
+            <h1 class="text-[clamp(1.8rem,4vw,2.5rem)] font-bold text-gray-800 mb-2">孟德尔定律模拟</h1>
+            <p class="text-gray-600 text-lg">模拟遗传因子的分离与自由组合过程</p>
+        </header>
+        
+        <!-- 第一部分：生殖器官和配子容器 -->
+        <section class="mb-10 bg-white rounded-xl shadow-md p-6">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">生殖器官与等位基因</h2>
+            
+            <div class="flex flex-col md:flex-row justify-between gap-6">
+                <!-- 雌性生殖器官 -->
+                <div class="flex-1 border-2 border-purple-400 rounded-lg p-4 bg-purple-50">
+                    <h3 class="text-center font-medium text-purple-700 mb-3">雌性生殖器官</h3>
+                    
+                    <div class="flex gap-4 justify-center">
+                        <!-- Y/y 等位基因容器 -->
+                        <div class="relative w-1/2 flex flex-col">
+                            <div class="gene-label border-2 border-deep-red border-b-0 rounded-b-none">Y/y 等位基因</div>
+                            <div class="ball-container border-2 border-deep-red rounded-t-none bg-white p-2">
+                                <div id="femaleYyContainer" class="w-full h-full"></div>
+                            </div>
+                            <!-- Y/y 数量设置 -->
+                            <div class="mt-3 px-2">
+                                <div class="input-group">
+                                    <label for="femaleYCount" class="text-deep-red">Y 数量:</label>
+                                    <input type="number" id="femaleYCount" min="0" max="100" value="10" class="border-deep-red focus:ring-1 focus:ring-deep-red">
+                                </div>
+                                <div class="input-group">
+                                    <label for="femaleyCount" class="text-light-red">y 数量:</label>
+                                    <input type="number" id="femaleyCount" min="0" max="100" value="10" class="border-light-red focus:ring-1 focus:ring-light-red">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- R/r 等位基因容器 -->
+                        <div class="relative w-1/2 flex flex-col">
+                            <div class="gene-label border-2 border-deep-blue border-b-0 rounded-b-none">R/r 等位基因</div>
+                            <div class="ball-container border-2 border-deep-blue rounded-t-none bg-white p-2">
+                                <div id="femaleRrContainer" class="w-full h-full"></div>
+                            </div>
+                            <!-- R/r 数量设置 -->
+                            <div class="mt-3 px-2">
+                                <div class="input-group">
+                                    <label for="femaleRCount" class="text-deep-blue">R 数量:</label>
+                                    <input type="number" id="femaleRCount" min="0" max="100" value="10" class="border-deep-blue focus:ring-1 focus:ring-deep-blue">
+                                </div>
+                                <div class="input-group">
+                                    <label for="femalerCount" class="text-light-blue">r 数量:</label>
+                                    <input type="number" id="femalerCount" min="0" max="100" value="10" class="border-light-blue focus:ring-1 focus:ring-light-blue">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 可能的雌配子类型说明 - 分两行显示，每行两个 -->
+                    <div class="mt-3 text-center text-sm text-gray-600">
+                        可能产生的雌配子类型:
+                        <div class="gamete-row">
+                            <span id="femaleGameteYR" class="gamete-type female-gamete">YR <span class="gamete-probability">25%</span></span>
+                            <span id="femaleGameteYr" class="gamete-type female-gamete">Yr <span class="gamete-probability">25%</span></span>
+                        </div>
+                        <div class="gamete-row">
+                            <span id="femaleGameteYr2" class="gamete-type female-gamete">yR <span class="gamete-probability">25%</span></span>
+                            <span id="femaleGameteyr" class="gamete-type female-gamete">yr <span class="gamete-probability">25%</span></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 雄性生殖器官 -->
+                <div class="flex-1 border-2 border-blue-400 rounded-lg p-4 bg-blue-50">
+                    <h3 class="text-center font-medium text-blue-700 mb-3">雄性生殖器官</h3>
+                    
+                    <div class="flex gap-4 justify-center">
+                        <!-- Y/y 等位基因容器 -->
+                        <div class="relative w-1/2 flex flex-col">
+                            <div class="gene-label border-2 border-deep-red border-b-0 rounded-b-none">Y/y 等位基因</div>
+                            <div class="ball-container border-2 border-deep-red rounded-t-none bg-white p-2">
+                                <div id="maleYyContainer" class="w-full h-full"></div>
+                            </div>
+                            <!-- Y/y 数量设置 -->
+                            <div class="mt-3 px-2">
+                                <div class="input-group">
+                                    <label for="maleYCount" class="text-deep-red">Y 数量:</label>
+                                    <input type="number" id="maleYCount" min="0" max="100" value="10" class="border-deep-red focus:ring-1 focus:ring-deep-red">
+                                </div>
+                                <div class="input-group">
+                                    <label for="maleyCount" class="text-light-red">y 数量:</label>
+                                    <input type="number" id="maleyCount" min="0" max="100" value="10" class="border-light-red focus:ring-1 focus:ring-light-red">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- R/r 等位基因容器 -->
+                        <div class="relative w-1/2 flex flex-col">
+                            <div class="gene-label border-2 border-deep-blue border-b-0 rounded-b-none">R/r 等位基因</div>
+                            <div class="ball-container border-2 border-deep-blue rounded-t-none bg-white p-2">
+                                <div id="maleRrContainer" class="w-full h-full"></div>
+                            </div>
+                            <!-- R/r 数量设置 -->
+                            <div class="mt-3 px-2">
+                                <div class="input-group">
+                                    <label for="maleRCount" class="text-deep-blue">R 数量:</label>
+                                    <input type="number" id="maleRCount" min="0" max="100" value="10" class="border-deep-blue focus:ring-1 focus:ring-deep-blue">
+                                </div>
+                                <div class="input-group">
+                                    <label for="malerCount" class="text-light-blue">r 数量:</label>
+                                    <input type="number" id="malerCount" min="0" max="100" value="10" class="border-light-blue focus:ring-1 focus:ring-light-blue">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 可能的雄配子类型说明 - 分两行显示，每行两个 -->
+                    <div class="mt-3 text-center text-sm text-gray-600">
+                        可能产生的雄配子类型:
+                        <div class="gamete-row">
+                            <span id="maleGameteYR" class="gamete-type male-gamete">YR <span class="gamete-probability">25%</span></span>
+                            <span id="maleGameteYr" class="gamete-type male-gamete">Yr <span class="gamete-probability">25%</span></span>
+                        </div>
+                        <div class="gamete-row">
+                            <span id="maleGameteYr2" class="gamete-type male-gamete">yR <span class="gamete-probability">25%</span></span>
+                            <span id="maleGameteyr" class="gamete-type male-gamete">yr <span class="gamete-probability">25%</span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 第二部分：控制按钮 -->
+        <section class="mb-10 flex flex-wrap gap-4 justify-center">
+            <button id="applyConfig" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg shadow transition duration-300 flex items-center">
+                <i class="fa fa-check-circle mr-2"></i> 应用配置
+            </button>
+            <button id="grabCombination" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow transition duration-300 flex items-center">
+                <i class="fa fa-hand-paper-o mr-2"></i> 抓取组合
+            </button>
+            <button id="resetExperiment" class="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded-lg shadow transition duration-300 flex items-center">
+                <i class="fa fa-refresh mr-2"></i> 重置实验
+            </button>
+            <div class="flex items-center gap-2 bg-gray-100 p-2 rounded-lg">
+                <label for="simulationCount" class="text-gray-700">模拟次数:</label>
+                <input type="number" id="simulationCount" min="1" max="3000" value="1000" class="w-24 border rounded p-2 text-center">
+                <button id="autoSimulate" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded shadow transition duration-300">
+                    <i class="fa fa-play mr-1"></i> 自动模拟
+                </button>
+            </div>
+        </section>
+        
+        <!-- 当前抓取结果显示 -->
+        <section class="mb-10 bg-white rounded-xl shadow-md p-6">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">当前抓取结果</h2>
+            <div id="currentResult" class="text-center text-lg">
+                尚未进行抓取，请点击"抓取组合"按钮开始实验。
+            </div>
+        </section>
+        
+        <!-- 第三部分：统计结果 -->
+        <section class="mb-10 bg-white rounded-xl shadow-md p-6">
+            <h2 class="text-xl font-semibold text-gray-700 mb-6">实验统计结果</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <!-- 雌配子统计 -->
+                <div>
+                    <h3 class="text-lg font-medium text-gray-700 mb-3">雌配子类型统计</h3>
+                    <p class="text-sm text-gray-500 mb-3">统计每次实验产生的雌配子类型数量及比例</p>
+                    <div class="overflow-x-auto">
+                        <table class="stats-table">
+                            <thead>
+                                <tr>
+                                    <th>雌配子类型</th>
+                                    <th>数量</th>
+                                    <th>比例</th>
+                                </tr>
+                            </thead>
+                            <tbody id="femaleGameteStats">
+                                <tr><td><span class="gamete-type female-gamete">YR</span></td><td>0</td><td>0%</td></tr>
+                                <tr><td><span class="gamete-type female-gamete">Yr</span></td><td>0</td><td>0%</td></tr>
+                                <tr><td><span class="gamete-type female-gamete">yR</span></td><td>0</td><td>0%</td></tr>
+                                <tr><td><span class="gamete-type female-gamete">yr</span></td><td>0</td><td>0%</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- 雄配子统计 -->
+                <div>
+                    <h3 class="text-lg font-medium text-gray-700 mb-3">雄配子类型统计</h3>
+                    <p class="text-sm text-gray-500 mb-3">统计每次实验产生的雄配子类型数量及比例</p>
+                    <div class="overflow-x-auto">
+                        <table class="stats-table">
+                            <thead>
+                                <tr>
+                                    <th>雄配子类型</th>
+                                    <th>数量</th>
+                                    <th>比例</th>
+                                </tr>
+                            </thead>
+                            <tbody id="maleGameteStats">
+                                <tr><td><span class="gamete-type male-gamete">YR</span></td><td>0</td><td>0%</td></tr>
+                                <tr><td><span class="gamete-type male-gamete">Yr</span></td><td>0</td><td>0%</td></tr>
+                                <tr><td><span class="gamete-type male-gamete">yR</span></td><td>0</td><td>0%</td></tr>
+                                <tr><td><span class="gamete-type male-gamete">yr</span></td><td>0</td><td>0%</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 配子类型比例图表 -->
+            <div class="mb-8">
+                <h3 class="text-lg font-medium text-gray-700 mb-3">配子类型比例对比</h3>
+                <div class="h-80">
+                    <canvas id="gameteChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- 基因型统计 -->
+            <div class="mb-8">
+                <h3 class="text-lg font-medium text-gray-700 mb-3">基因型统计</h3>
+                <div class="overflow-x-auto">
+                    <table class="stats-table">
+                        <thead>
+                            <tr>
+                                <th>基因型</th>
+                                <th>数量</th>
+                                <th>百分比</th>
+                            </tr>
+                        </thead>
+                        <tbody id="genotypeStats">
+                            <tr><td>YYRR</td><td>0</td><td>0%</td></tr>
+                            <tr><td>YYRr</td><td>0</td><td>0%</td></tr>
+                            <tr><td>YYrr</td><td>0</td><td>0%</td></tr>
+                            <tr><td>YyRR</td><td>0</td><td>0%</td></tr>
+                            <tr><td>YyRr</td><td>0</td><td>0%</td></tr>
+                            <tr><td>Yyrr</td><td>0</td><td>0%</td></tr>
+                            <tr><td>yyRR</td><td>0</td><td>0%</td></tr>
+                            <tr><td>yyRr</td><td>0</td><td>0%</td></tr>
+                            <tr><td>yyrr</td><td>0</td><td>0%</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- 表现型柱状图 -->
+            <div class="mb-8">
+                <h3 class="text-lg font-medium text-gray-700 mb-3">表现型统计</h3>
+                <div class="h-80">
+                    <canvas id="phenotypeChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- 性状分离比 -->
+            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <h3 class="text-lg font-medium text-gray-700 mb-2">性状分离比</h3>
+                <div id="phenotypeRatio" class="text-xl font-semibold text-center text-gray-800">
+                    Y_R_ : Y_rr : yyR_ : yyrr = 0 : 0 : 0 : 0
+                </div>
+            </div>
+        </section>
+        
+        <footer class="text-center text-gray-500 text-sm py-4">
+            <p>孟德尔自由组合定律模拟程序 交大附中生物组陈彤&amp;王自闇© 20250917</p>
+        </footer>
+    </div>
+
+    <script>
+        // 全局变量
+        let totalExperiments = 0;
+        // 分别统计雌配子和雄配子的数量
+        let femaleGameteCounts = { "YR": 0, "Yr": 0, "yR": 0, "yr": 0 };
+        let maleGameteCounts = { "YR": 0, "Yr": 0, "yR": 0, "yr": 0 };
+        let genotypeCounts = {
+            "YYRR": 0, "YYRr": 0, "YYrr": 0,
+            "YyRR": 0, "YyRr": 0, "Yyrr": 0,
+            "yyRR": 0, "yyRr": 0, "yyrr": 0
+        };
+        let gameteChart = null;
+        let phenotypeChart = null;
+        // 存储当前配置的基因数量
+        let currentConfig = {
+            femaleY: 10,
+            femaley: 10,
+            femaleR: 10,
+            femaler: 10,
+            maleY: 10,
+            maley: 10,
+            maleR: 10,
+            maler: 10
+        };
+        
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            // 添加输入验证
+            setupInputValidation();
+            
+            // 应用初始配置
+            applyConfiguration();
+            
+            // 初始化图表
+            initCharts();
+            
+            // 绑定按钮事件
+            document.getElementById('applyConfig').addEventListener('click', applyConfiguration);
+            document.getElementById('grabCombination').addEventListener('click', grabCombination);
+            document.getElementById('resetExperiment').addEventListener('click', resetExperiment);
+            document.getElementById('autoSimulate').addEventListener('click', autoSimulate);
+        });
+        
+        // 设置输入验证
+        function setupInputValidation() {
+            // 获取所有数量输入框
+            const countInputs = document.querySelectorAll('input[type="number"]');
+            
+            // 为每个输入框添加验证
+            countInputs.forEach(input => {
+                // 失去焦点时验证
+                input.addEventListener('blur', function() {
+                    validateInput(this);
+                });
+                
+                // 按Enter时验证
+                input.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        validateInput(this);
+                    }
+                });
+            });
+        }
+        
+        // 验证输入值是否在有效范围内
+        function validateInput(input) {
+            const min = parseInt(input.min) || 0;
+            const max = parseInt(input.max) || 100;
+            let value = parseInt(input.value) || 0;
+            
+            // 如果值超出范围，恢复默认值
+            if (value < min || value > max || isNaN(value)) {
+                value = parseInt(input.defaultValue) || 10;
+                input.value = value;
+                
+                // 显示提示
+                showNotification(`值必须在 ${min}-${max} 范围内，已自动恢复为默认值 ${value}`);
+            }
+        }
+        
+        // 显示通知提示
+        function showNotification(message) {
+            // 创建通知元素
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 bg-yellow-500 text-white px-4 py-2 rounded shadow-lg z-50';
+            notification.textContent = message;
+            
+            // 添加到页面
+            document.body.appendChild(notification);
+            
+            // 3秒后移除
+            setTimeout(() => {
+                notification.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 500);
+            }, 3000);
+        }
+        
+        // 应用配置，生成小球
+        function applyConfiguration() {
+            // 验证所有输入
+            const countInputs = document.querySelectorAll('input[type="number"]');
+            countInputs.forEach(input => validateInput(input));
+            
+            // 获取用户配置的数量并更新当前配置
+            currentConfig = {
+                femaleY: parseInt(document.getElementById('femaleYCount').value) || 0,
+                femaley: parseInt(document.getElementById('femaleyCount').value) || 0,
+                femaleR: parseInt(document.getElementById('femaleRCount').value) || 0,
+                femaler: parseInt(document.getElementById('femalerCount').value) || 0,
+                maleY: parseInt(document.getElementById('maleYCount').value) || 0,
+                maley: parseInt(document.getElementById('maleyCount').value) || 0,
+                maleR: parseInt(document.getElementById('maleRCount').value) || 0,
+                maler: parseInt(document.getElementById('malerCount').value) || 0
+            };
+            
+            // 生成小球 - 分别指定Y和y的数量
+            generateBallsByType('femaleYyContainer', currentConfig.femaleY, currentConfig.femaley, 'deep-red', 'Y', 'light-red', 'y');
+            generateBallsByType('femaleRrContainer', currentConfig.femaleR, currentConfig.femaler, 'deep-blue', 'R', 'light-blue', 'r');
+            generateBallsByType('maleYyContainer', currentConfig.maleY, currentConfig.maley, 'deep-red', 'Y', 'light-red', 'y');
+            generateBallsByType('maleRrContainer', currentConfig.maleR, currentConfig.maler, 'deep-blue', 'R', 'light-blue', 'r');
+            
+            // 更新可能的配子类型显示
+            updatePossibleGametes();
+        }
+        
+        // 更新可能的配子类型显示
+        function updatePossibleGametes() {
+            // 计算雌性配子概率
+            const totalFemaleY = currentConfig.femaleY + currentConfig.femaley;
+            const probFemaleY = totalFemaleY > 0 ? currentConfig.femaleY / totalFemaleY : 0;
+            const probFemaley = totalFemaleY > 0 ? currentConfig.femaley / totalFemaleY : 0;
+            
+            const totalFemaleR = currentConfig.femaleR + currentConfig.femaler;
+            const probFemaleR = totalFemaleR > 0 ? currentConfig.femaleR / totalFemaleR : 0;
+            const probFemaler = totalFemaleR > 0 ? currentConfig.femaler / totalFemaleR : 0;
+            
+            // 更新雌性配子显示
+            updateGameteDisplay('femaleGameteYR', 'YR', probFemaleY * probFemaleR, 'female-gamete');
+            updateGameteDisplay('femaleGameteYr', 'Yr', probFemaleY * probFemaler, 'female-gamete');
+            updateGameteDisplay('femaleGameteYr2', 'yR', probFemaley * probFemaleR, 'female-gamete');
+            updateGameteDisplay('femaleGameteyr', 'yr', probFemaley * probFemaler, 'female-gamete');
+            
+            // 计算雄性配子概率
+            const totalMaleY = currentConfig.maleY + currentConfig.maley;
+            const probMaleY = totalMaleY > 0 ? currentConfig.maleY / totalMaleY : 0;
+            const probMaley = totalMaleY > 0 ? currentConfig.maley / totalMaleY : 0;
+            
+            const totalMaleR = currentConfig.maleR + currentConfig.maler;
+            const probMaleR = totalMaleR > 0 ? currentConfig.maleR / totalMaleR : 0;
+            const probMaler = totalMaleR > 0 ? currentConfig.maler / totalMaleR : 0;
+            
+            // 更新雄性配子显示
+            updateGameteDisplay('maleGameteYR', 'YR', probMaleY * probMaleR, 'male-gamete');
+            updateGameteDisplay('maleGameteYr', 'Yr', probMaleY * probMaler, 'male-gamete');
+            updateGameteDisplay('maleGameteYr2', 'yR', probMaley * probMaleR, 'male-gamete');
+            updateGameteDisplay('maleGameteyr', 'yr', probMaley * probMaler, 'male-gamete');
+        }
+        
+        // 更新单个配子类型的显示
+        function updateGameteDisplay(elementId, gameteType, probability, baseClass) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            
+            // 计算百分比并四舍五入
+            const percentage = Math.round(probability * 100);
+            
+            // 根据概率设置样式和内容
+            if (percentage > 0) {
+                element.className = `gamete-type ${baseClass}`;
+                element.innerHTML = `${gameteType} <span class="gamete-probability">${percentage}%</span>`;
+            } else {
+                element.className = 'gamete-type-invalid';
+                element.innerHTML = `${gameteType} <span class="gamete-probability">0%</span>`;
+            }
+        }
+        
+        // 生成小球 - 按类型分别指定数量，从底部开始往上排列
+        function generateBallsByType(containerId, count1, count2, color1, label1, color2, label2) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = ''; // 清空容器
+            
+            // 计算总球数
+            const totalCount = count1 + count2;
+            if (totalCount === 0) return; // 没有球则不生成
+            
+            // 获取容器尺寸（考虑内边距）
+            const containerRect = container.getBoundingClientRect();
+            const containerWidth = containerRect.width - 10; // 减去内边距
+            const containerHeight = containerRect.height - 10; // 减去内边距
+            
+            // 计算每行可容纳的小球数量
+            const ballsPerRow = Math.ceil(Math.sqrt(totalCount));
+            
+            // 根据容器大小和小球数量计算合适的小球尺寸
+            // 数量越多，小球越小，确保能在容器内显示
+            const baseSize = Math.min(30, Math.max(5, Math.floor(containerWidth / ballsPerRow * 0.85)));
+            const sizeFactor = Math.min(1, 150 / totalCount); // 数量超过150时开始缩小
+            const ballSize = Math.max(5, Math.floor(baseSize * sizeFactor));
+            
+            // 计算实际可容纳的行数
+            const rows = Math.ceil(totalCount / ballsPerRow);
+            
+            // 计算间隙，使小球分布更均匀
+            const xGap = Math.max(2, Math.floor((containerWidth - (ballsPerRow * ballSize)) / (ballsPerRow + 1)));
+            const yGap = Math.max(2, Math.floor((containerHeight - (rows * ballSize)) / (rows + 1)));
+            
+            let ballIndex = 0;
+            
+            // 创建网格布局的小球，从底部开始往上排列
+            for (let row = 0; row < rows && ballIndex < totalCount; row++) {
+                // 计算当前行应该有多少个小球
+                const ballsInRow = row < rows - 1 ? ballsPerRow : totalCount - (row * ballsPerRow);
+                
+                // 计算当前行的Y坐标（从底部向上）
+                const yPos = containerHeight - (yGap + (row + 1) * (ballSize + yGap));
+                
+                // 为了居中显示，计算行的起始X坐标
+                const rowWidth = ballsInRow * ballSize + (ballsInRow - 1) * xGap;
+                const startX = Math.floor((containerWidth - rowWidth) / 2);
+                
+                // 在当前行中创建小球
+                for (let col = 0; col < ballsInRow && ballIndex < totalCount; col++) {
+                    // 计算X坐标
+                    const xPos = startX + col * (ballSize + xGap);
+                    
+                    // 选择颜色和标签
+                    const isType1 = ballIndex < count1;
+                    const color = isType1 ? color1 : color2;
+                    const label = isType1 ? label1 : label2;
+                    
+                    createBall(container, ballSize, color, label, xPos, yPos);
+                    ballIndex++;
+                }
+            }
+        }
+        
+        // 创建单个小球
+        function createBall(container, size, color, label, xPos, yPos) {
+            const ball = document.createElement('div');
+            ball.className = 'gene-ball';
+            ball.style.width = `${size}px`;
+            ball.style.height = `${size}px`;
+            // 直接使用颜色值确保正确显示
+            const colorMap = {
+                'deep-red': '#C41E3A',
+                'light-red': '#FF6B6B',
+                'deep-blue': '#0F52BA',
+                'light-blue': '#6B9FFF'
+            };
+            ball.style.backgroundColor = colorMap[color] || color;
+            ball.textContent = label;
+            ball.style.fontSize = `${Math.max(6, Math.floor(size * 0.5))}px`; // 调整文字大小
+            
+            // 使用计算好的位置
+            ball.style.left = `${xPos}px`;
+            ball.style.top = `${yPos}px`;
+            
+            container.appendChild(ball);
+            
+            // 添加创建动画
+            setTimeout(() => {
+                ball.style.transform = 'scale(1)';
+            }, 50);
+        }
+        
+        // 抓取组合 - 基于当前配置的数量进行加权随机选择
+        function grabCombination() {
+            // 检查是否有容器为空
+            if (currentConfig.femaleY + currentConfig.femaley === 0 ||
+                currentConfig.femaleR + currentConfig.femaler === 0 ||
+                currentConfig.maleY + currentConfig.maley === 0 ||
+                currentConfig.maleR + currentConfig.maler === 0) {
+                showNotification("请确保所有容器中都有小球才能进行抓取");
+                return;
+            }
+            
+            // 基于当前配置的数量，加权随机选择基因
+            const femaleY = weightedRandomSelect(currentConfig.femaleY, currentConfig.femaley, 'Y', 'y');
+            const femaleR = weightedRandomSelect(currentConfig.femaleR, currentConfig.femaler, 'R', 'r');
+            const maleY = weightedRandomSelect(currentConfig.maleY, currentConfig.maley, 'Y', 'y');
+            const maleR = weightedRandomSelect(currentConfig.maleR, currentConfig.maler, 'R', 'r');
+            
+            // 高亮显示被选中的球
+            highlightSelectedBall('femaleYyContainer', femaleY);
+            highlightSelectedBall('femaleRrContainer', femaleR);
+            highlightSelectedBall('maleYyContainer', maleY);
+            highlightSelectedBall('maleRrContainer', maleR);
+            
+            // 形成配子
+            const femaleGamete = femaleY + femaleR;
+            const maleGamete = maleY + maleR;
+            
+            // 计算基因型
+            const genotype = calculateGenotype(femaleY, maleY, femaleR, maleR);
+            
+            // 更新当前结果显示
+            updateCurrentResult(femaleGamete, maleGamete, genotype);
+            
+            // 更新统计数据
+            updateStatistics(femaleGamete, maleGamete, genotype);
+            
+            // 更新图表
+            updateCharts();
+        }
+        
+        // 基于权重随机选择
+        function weightedRandomSelect(count1, count2, value1, value2) {
+            const total = count1 + count2;
+            if (total === 0) return null;
+            
+            const random = Math.random() * total;
+            return random < count1 ? value1 : value2;
+        }
+        
+        // 高亮显示被选中的球
+        function highlightSelectedBall(containerId, label) {
+            const container = document.getElementById(containerId);
+            const balls = container.getElementsByClassName('gene-ball');
+            
+            // 先重置所有球的样式
+            Array.from(balls).forEach(ball => {
+                ball.style.transform = 'scale(1)';
+                ball.style.zIndex = '2';
+            });
+            
+            // 收集所有符合条件的球
+            const candidateBalls = Array.from(balls).filter(ball => ball.textContent === label);
+            
+            // 随机选择一个并高亮
+            if (candidateBalls.length > 0) {
+                const randomIndex = Math.floor(Math.random() * candidateBalls.length);
+                const selectedBall = candidateBalls[randomIndex];
+                
+                selectedBall.style.transform = 'scale(1.3)';
+                selectedBall.style.zIndex = '20';
+                
+                // 恢复原状
+                setTimeout(() => {
+                    selectedBall.style.transform = 'scale(1)';
+                    selectedBall.style.zIndex = '2';
+                }, 500);
+            }
+        }
+        
+        // 计算基因型
+        function calculateGenotype(femaleY, maleY, femaleR, maleR) {
+            // 对Y基因排序，显性在前
+            const yGenes = [femaleY, maleY].sort((a, b) => b.localeCompare(a));
+            // 对R基因排序，显性在前
+            const rGenes = [femaleR, maleR].sort((a, b) => b.localeCompare(a));
+            
+            return yGenes[0] + yGenes[1] + rGenes[0] + rGenes[1];
+        }
+        
+        // 更新当前结果显示
+        function updateCurrentResult(femaleGamete, maleGamete, genotype) {
+            const resultDiv = document.getElementById('currentResult');
+            resultDiv.innerHTML = `
+                <div class="flex flex-col md:flex-row justify-center items-center gap-4 my-4">
+                    <div class="flex items-center gap-2">
+                        <span class="font-medium">雌配子:</span>
+                        <span class="gamete-type female-gamete">${femaleGamete}</span>
+                    </div>
+                    <span class="text-gray-500 text-xl">×</span>
+                    <div class="flex items-center gap-2">
+                        <span class="font-medium">雄配子:</span></span>
+                        <span class="gamete-type male-gamete">${maleGamete}</span>
+                    </div>
+                    <span class="text-gray-500 text-xl">→</span>
+                    <div class="flex items-center gap-2">
+                        <span class="font-medium">基因型:</span>
+                        <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full font-semibold">${genotype}</span>
+                    </div>
+                </div>
+                <div class="text-gray-600">总实验次数: ${totalExperiments + 1}</div>
+            `;
+        }
+        
+        // 更新统计数据
+        function updateStatistics(femaleGamete, maleGamete, genotype) {
+            totalExperiments++;
+            
+            // 移除之前的高亮
+            document.querySelectorAll('#femaleGameteStats tr, #maleGameteStats tr').forEach(row => {
+                row.classList.remove('highlight-row');
+            });
+            
+            // 更新雌配子统计
+            femaleGameteCounts[femaleGamete]++;
+            const femaleRows = document.querySelectorAll('#femaleGameteStats tr');
+            femaleRows.forEach(row => {
+                const gameteType = row.cells[0].textContent.trim();
+                const count = femaleGameteCounts[gameteType] || 0;
+                const percentage = totalExperiments > 0 ? Math.round((count / totalExperiments) * 100) : 0;
+                
+                row.cells[1].textContent = count;
+                row.cells[2].textContent = `${percentage}%`;
+                
+                // 高亮当前雌配子
+                if (gameteType === femaleGamete) {
+                    row.classList.add('highlight-row');
+                }
+            });
+            
+            // 更新雄配子统计
+            maleGameteCounts[maleGamete]++;
+            const maleRows = document.querySelectorAll('#maleGameteStats tr');
+            maleRows.forEach(row => {
+                const gameteType = row.cells[0].textContent.trim();
+                const count = maleGameteCounts[gameteType] || 0;
+                const percentage = totalExperiments > 0 ? Math.round((count / totalExperiments) * 100) : 0;
+                
+                row.cells[1].textContent = count;
+                row.cells[2].textContent = `${percentage}%`;
+                
+                // 高亮当前雄配子
+                if (gameteType === maleGamete) {
+                    row.classList.add('highlight-row');
+                }
+            });
+            
+            // 更新基因型统计
+            genotypeCounts[genotype]++;
+            const genotypeRows = document.querySelectorAll('#genotypeStats tr');
+            genotypeRows.forEach(row => {
+                const genotype = row.cells[0].textContent;
+                const count = genotypeCounts[genotype] || 0;
+                const percentage = totalExperiments > 0 ? Math.round((count / totalExperiments) * 100) : 0;
+                
+                row.cells[1].textContent = count;
+                row.cells[2].textContent = `${percentage}%`;
+            });
+            
+            // 更新性状分离比
+            updatePhenotypeRatio();
+        }
+        
+        // 初始化图表
+        function initCharts() {
+            // 配子类型对比图表
+            const gameteCtx = document.getElementById('gameteChart').getContext('2d');
+            gameteChart = new Chart(gameteCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['YR', 'Yr', 'yR', 'yr'],
+                    datasets: [
+                        {
+                            label: '雌配子',
+                            data: [0, 0, 0, 0],
+                            backgroundColor: 'rgba(124, 58, 237, 0.7)',
+                            borderColor: 'rgba(124, 58, 237, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: '雄配子',
+                            data: [0, 0, 0, 0],
+                            backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                            borderColor: 'rgba(59, 130, 246, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '数量'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // 表现型图表
+            const phenotypeCtx = document.getElementById('phenotypeChart').getContext('2d');
+            phenotypeChart = new Chart(phenotypeCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Y_R_', 'Y_rr', 'yyR_', 'yyrr'],
+                    datasets: [{
+                        label: '表现型数量',
+                        data: [0, 0, 0, 0],
+                        backgroundColor: [
+                            'rgba(75, 192, 192, 0.7)',
+                            'rgba(255, 99, 132, 0.7)',
+                            'rgba(54, 162, 235, 0.7)',
+                            'rgba(255, 206, 86, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 206, 86, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '数量'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 更新图表
+        function updateCharts() {
+            // 更新配子类型对比图表
+            gameteChart.data.datasets[0].data = [
+                femaleGameteCounts["YR"],
+                femaleGameteCounts["Yr"],
+                femaleGameteCounts["yR"],
+                femaleGameteCounts["yr"]
+            ];
+            gameteChart.data.datasets[1].data = [
+                maleGameteCounts["YR"],
+                maleGameteCounts["Yr"],
+                maleGameteCounts["yR"],
+                maleGameteCounts["yr"]
+            ];
+            gameteChart.update();
+            
+            // 计算各表现型数量
+            const Y_R = genotypeCounts["YYRR"] + genotypeCounts["YYRr"] + 
+                        genotypeCounts["YyRR"] + genotypeCounts["YyRr"];
+            const Y_rr = genotypeCounts["YYrr"] + genotypeCounts["Yyrr"];
+            const yyR_ = genotypeCounts["yyRR"] + genotypeCounts["yyRr"];
+            const yyrr = genotypeCounts["yyrr"];
+            
+            // 更新表现型图表数据
+            phenotypeChart.data.datasets[0].data = [Y_R, Y_rr, yyR_, yyrr];
+            phenotypeChart.update();
+        }
+        
+        // 更新性状分离比
+        function updatePhenotypeRatio() {
+            // 计算各表现型数量
+            const Y_R = genotypeCounts["YYRR"] + genotypeCounts["YYRr"] + 
+                        genotypeCounts["YyRR"] + genotypeCounts["YyRr"];
+            const Y_rr = genotypeCounts["YYrr"] + genotypeCounts["Yyrr"];
+            const yyR_ = genotypeCounts["yyRR"] + genotypeCounts["yyRr"];
+            const yyrrCount = genotypeCounts["yyrr"];
+            
+            // 计算比例（简化为最小整数比）
+            let ratioText = "Y_R_ : Y_rr : yyR_ : yyrr = ";
+            
+            if (totalExperiments === 0) {
+                ratioText += "0 : 0 : 0 : 0";
+            } else {
+                // 找到最小的非零值作为除数
+                let minVal = Math.min(...[Y_R, Y_rr, yyR_, yyrrCount].filter(v => v > 0));
+                
+                // 如果所有值都为零
+                if (minVal === undefined) {
+                    ratioText += "0 : 0 : 0 : 0";
+                } else {
+                    // 简化比例
+                    const ratioY_R = Math.round(Y_R / minVal);
+                    const ratioY_rr = Math.round(Y_rr / minVal);
+                    const ratioyyR_ = Math.round(yyR_ / minVal);
+                    const ratioyyrr = Math.round(yyrrCount / minVal);
+                    
+                    ratioText += `${ratioY_R} : ${ratioY_rr} : ${ratioyyR_} : ${ratioyyrr}`;
+                }
+            }
+            
+            document.getElementById('phenotypeRatio').textContent = ratioText;
+        }
+        
+        // 重置实验
+        function resetExperiment() {
+            // 重置计数器
+            totalExperiments = 0;
+            
+            // 重置配子统计
+            for (const key in femaleGameteCounts) {
+                femaleGameteCounts[key] = 0;
+            }
+            for (const key in maleGameteCounts) {
+                maleGameteCounts[key] = 0;
+            }
+            
+            // 重置基因型统计
+            for (const key in genotypeCounts) {
+                genotypeCounts[key] = 0;
+            }
+            
+            // 恢复默认数量值
+            document.getElementById('femaleYCount').value = 10;
+            document.getElementById('femaleyCount').value = 10;
+            document.getElementById('femaleRCount').value = 10;
+            document.getElementById('femalerCount').value = 10;
+            
+            document.getElementById('maleYCount').value = 10;
+            document.getElementById('maleyCount').value = 10;
+            document.getElementById('maleRCount').value = 10;
+            document.getElementById('malerCount').value = 10;
+            
+            document.getElementById('simulationCount').value = 1000;
+            
+            // 更新当前配置
+            currentConfig = {
+                femaleY: 10,
+                femaley: 10,
+                femaleR: 10,
+                femaler: 10,
+                maleY: 10,
+                maley: 10,
+                maleR: 10,
+                maler: 10
+            };
+            
+            // 移除所有高亮
+            document.querySelectorAll('#femaleGameteStats tr, #maleGameteStats tr').forEach(row => {
+                row.classList.remove('highlight-row');
+            });
+            
+            // 更新配子统计表格
+            const femaleRows = document.querySelectorAll('#femaleGameteStats tr');
+            femaleRows.forEach(row => {
+                row.cells[1].textContent = "0";
+                row.cells[2].textContent = "0%";
+            });
+            
+            const maleRows = document.querySelectorAll('#maleGameteStats tr');
+            maleRows.forEach(row => {
+                row.cells[1].textContent = "0";
+                row.cells[2].textContent = "0%";
+            });
+            
+            // 更新基因型表格
+            const genotypeRows = document.querySelectorAll('#genotypeStats tr');
+            genotypeRows.forEach(row => {
+                row.cells[1].textContent = "0";
+                row.cells[2].textContent = "0%";
+            });
+            
+            // 重置当前结果
+            document.getElementById('currentResult').textContent = 
+                "实验已重置，请点击\"抓取组合\"按钮开始新的实验。";
+            
+            // 更新图表和比例
+            updateCharts();
+            updatePhenotypeRatio();
+            updatePossibleGametes();
+            
+            // 重新生成小球
+            applyConfiguration();
+        }
+        
+        // 自动模拟
+        function autoSimulate() {
+            // 检查是否有容器为空
+            if (currentConfig.femaleY + currentConfig.femaley === 0 ||
+                currentConfig.femaleR + currentConfig.femaler === 0 ||
+                currentConfig.maleY + currentConfig.maley === 0 ||
+                currentConfig.maleR + currentConfig.maler === 0) {
+                showNotification("请确保所有容器中都有小球才能进行自动模拟");
+                return;
+            }
+            
+            const countInput = document.getElementById('simulationCount');
+            let count = parseInt(countInput.value) || 1000;
+            
+            // 确保在有效范围内
+            count = Math.min(3000, Math.max(1, count));
+            countInput.value = count;
+            
+            // 禁用按钮防止重复点击
+            const buttons = document.querySelectorAll('button');
+            buttons.forEach(btn => btn.disabled = true);
+            
+            // 显示进度
+            document.getElementById('currentResult').innerHTML = 
+                `<div class="text-center">正在进行自动模拟... <br> 进度: 0/${count}</div>`;
+            
+            // 执行模拟
+            let completed = 0;
+            const interval = setInterval(() => {
+                // 一次执行10次抓取，提高性能
+                for (let i = 0; i < 10 && completed < count; i++) {
+                    // 直接使用当前配置计算，不显示动画以提高性能
+                    const femaleY = weightedRandomSelect(currentConfig.femaleY, currentConfig.femaley, 'Y', 'y');
+                    const femaleR = weightedRandomSelect(currentConfig.femaleR, currentConfig.femaler, 'R', 'r');
+                    const maleY = weightedRandomSelect(currentConfig.maleY, currentConfig.maley, 'Y', 'y');
+                    const maleR = weightedRandomSelect(currentConfig.maleR, currentConfig.maler, 'R', 'r');
+                    
+                    const femaleGamete = femaleY + femaleR;
+                    const maleGamete = maleY + maleR;
+                    const genotype = calculateGenotype(femaleY, maleY, femaleR, maleR);
+                    
+                    updateStatistics(femaleGamete, maleGamete, genotype);
+                    completed++;
+                }
+                
+                // 更新进度
+                document.getElementById('currentResult').innerHTML = 
+                    `<div class="text-center">正在进行自动模拟... <br> 进度: ${completed}/${count}</div>`;
+                
+                // 每100次更新一次图表，提高性能
+                if (completed % 100 === 0) {
+                    updateCharts();
+                }
+                
+                // 完成后清理
+                if (completed >= count) {
+                    clearInterval(interval);
+                    updateCharts();
+                    document.getElementById('currentResult').innerHTML = 
+                        `<div class="text-center">自动模拟完成! <br> 总实验次数: ${totalExperiments}</div>`;
+                    
+                    // 重新启用按钮
+                    buttons.forEach(btn => btn.disabled = false);
+                }
+            }, 10); // 每10ms执行一次
+        }
+    </script>
+
+
+    </body></html>
